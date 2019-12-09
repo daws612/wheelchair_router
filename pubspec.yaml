@@ -24,6 +24,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.2
   flutter_launcher_icons: ^0.7.2+1
+  permission_handler: ^4.0.0
+  google_maps_flutter: ^0.5.19
+  geolocator: '^5.0.0'
 
 dev_dependencies:
   flutter_test:
@@ -36,10 +39,10 @@ dev_dependencies:
 # The following section is specific to Flutter.
 flutter:
   assets:
-    - assets
+    - assets/images/
 
 flutter_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
   image_path: "assets/images/kocaeli_logo.jpg"
 
