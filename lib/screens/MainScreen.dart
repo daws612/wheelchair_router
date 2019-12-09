@@ -19,6 +19,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   bool isLoading = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  final Map<String, Marker> _markers = {};
 
   @override
   void initState() {
@@ -70,6 +71,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     print("Permission now Granted");
     Position position = await Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
     _controller.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -80,12 +82,20 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
 
     setState(() {
+      _markers.clear();
+      final marker  = Marker(
+        markerId: MarkerId(position.latitude.toString() + position.longitude.toString()),
+        position: LatLng(position.latitude, position.longitude),
+        infoWindow: InfoWindow(title: "Current Location")
+      );
+      _markers["Current Location"] = marker;
       isLoading = false;
     });
   }
 
   void _onMapCreated(GoogleMapController controller) {
     _controller = controller;
+
   }
 
   @override
@@ -100,6 +110,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             GoogleMap(
               onMapCreated: _onMapCreated,
               initialCameraPosition: CameraPosition(target: _center, zoom: 15),
+              markers: _markers.values.toSet(),
             ),
             showCircularProgress()
           ],
