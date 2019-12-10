@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/services/PermissionsService.dart';
+import 'package:google_maps_webservice/places.dart';
 
 class MainScreen extends StatefulWidget {
   MainScreen({this.title});
@@ -16,7 +18,7 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   GoogleMapController _controller;
   Geolocator _geolocator = Geolocator();
-  bool isLoading = false;
+  bool _isLoading = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final Map<String, Marker> _markers = {};
@@ -24,7 +26,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    isLoading = false;
+    _isLoading = false;
     WidgetsBinding.instance.addObserver(this);
     PermissionsService()
         .hasPermission(
@@ -39,7 +41,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             .then((result) {
           if (!result) {
             setState(() {
-              isLoading = false;
+              _isLoading = false;
             });
             print("Not yet granted or denied");
             final snackBar = SnackBar(
@@ -66,7 +68,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void showCurrentLocation() async {
     setState(() {
-      isLoading = true;
+      _isLoading = true;
     });
     print("Permission now Granted");
     //_geolocator.forceAndroidLocationManager = true;
@@ -83,14 +85,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
 
     setState(() {
-      /*_markers.clear();
-      final marker = Marker(
-          markerId: MarkerId(
-              position.latitude.toString() + position.longitude.toString()),
-          position: LatLng(position.latitude, position.longitude),
-          infoWindow: InfoWindow(title: "Current Location"));
-      _markers["Current Location"] = marker;*/
-      isLoading = false;
+      _isLoading = false;
     });
   }
 
@@ -102,9 +97,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
         key: _scaffoldKey,
-        // appBar: AppBar(
-        //   title: Text(widget.title),
-        // ),
         body: Stack(
           children: <Widget>[
             GoogleMap(
@@ -113,44 +105,45 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               markers: _markers.values.toSet(),
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
-              padding: EdgeInsets.only(top: 100.0,),
+              padding: EdgeInsets.only(
+                top: 100.0,
+              ),
               mapType: MapType.normal,
             ),
             Positioned(
-              top: 50,
-              right: 15,
-              left: 15,
-              child: Container(
-                color: Colors.white,
-                child: Row(
-                  children: <Widget>[
-                    IconButton(
-                      color: Theme.of(context).accentColor,
-                      icon: Icon(Icons.menu),
-                      onPressed: () {print('Tapped hamburger');},
-                    ),
-                    Expanded(
-                      child: TextField(
-                        cursorColor: Colors.black,
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.go,
-                        decoration: InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding:
-                                EdgeInsets.symmetric(horizontal: 15),
-                            hintText: "Search..."),
-                            onSubmitted: (value) {print('Seatch this: ' + value);},
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: CircleAvatar(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        backgroundImage: AssetImage('assets/images/kocaeli_logo.jpg'),
-                      ),
-                    ),
-                  ],
+              // To take AppBar Size only
+              top: 50.0,
+              left: 20.0,
+              right: 20.0,
+              child: AppBar(
+                backgroundColor: Colors.white,
+                leading: Icon(
+                  Icons.menu,
+                  color: Theme.of(context).accentColor,
                 ),
+                primary: false,
+                title: TextField(
+                  decoration: InputDecoration(
+                      hintText: "Search your destination...",
+                      border: InputBorder.none,
+                      hintStyle: TextStyle(color: Colors.grey)),
+                  onTap: () { _navigateAndDisplaySelection(context); },
+                ),
+                actions: <Widget>[
+                  IconButton(
+                    icon: Icon(Icons.search,
+                        color: Theme.of(context).accentColor),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    icon: CircleAvatar(
+                      backgroundImage:
+                          AssetImage('assets/images/kocaeli_logo.jpg'),
+                    ),
+                    onPressed: () {},
+                  ),
+                ],
               ),
             ),
             showCircularProgress()
@@ -159,7 +152,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget showCircularProgress() {
-    if (isLoading) {
+    if (_isLoading) {
       //return Center(child: CircularProgressIndicator(backgroundColor: Theme.of(context).primaryColor,));
       return new Stack(
         children: [
@@ -184,4 +177,26 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       height: 0,
     );
   }
+
+  _navigateAndDisplaySelection(BuildContext context) async {
+    // Navigator.push returns a Future that completes after calling
+    // Navigator.pop on the Selection Screen.
+    final PlacesDetailsResponse result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => PlacesSearchScreen(mapController: _controller,)),
+    );
+    if(result != null) {
+      _markers.clear();
+      final location = result.result.geometry.location;
+      final m = Marker(
+        markerId: MarkerId(
+           location.lat.toString() + location.lng.toString()
+        ),
+        position: LatLng(location.lat, location.lng),
+        infoWindow: InfoWindow(title: "Destination")
+      );
+     _markers["Current Location"] = m;
+    }
+  }
 }
+
