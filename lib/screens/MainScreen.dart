@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -5,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 
 class MainScreen extends StatefulWidget {
   MainScreen({this.title});
@@ -22,6 +24,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final Map<String, Marker> _markers = {};
+
+  Map<PolylineId, Polyline> polylines = {};
+  List<LatLng> polylineCoordinates = [];
 
   @override
   void initState() {
@@ -103,6 +108,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               onMapCreated: _onMapCreated,
               initialCameraPosition: CameraPosition(target: _center, zoom: 15),
               markers: _markers.values.toSet(),
+              polylines: Set<Polyline>.of(polylines.values),
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
               padding: EdgeInsets.only(
@@ -190,7 +196,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               child: SizedBox(
                 width: 180,
                 child: RaisedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    _getDirections();
+                  },
                   child: const Text('Get Directions'),
                   color: Theme.of(context).primaryColor,
                   textColor: Colors.white,
@@ -241,5 +249,45 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         _destinationSet = true;
       });
     }
+  }
+
+  _getDirections() async {
+    polylineCoordinates.clear();
+    polylines.clear();
+    String baseURL = 'https://maps.googleapis.com/maps/api/directions/json';
+
+    LatLng destination = _markers["Destination"].position;
+    Position origin = await _geolocator.getLastKnownPosition(
+        locationPermissionLevel: GeolocationPermission.locationAlways);
+    String or = origin.latitude.toString() + "," + origin.longitude.toString();
+    String dest = destination.latitude.toString() +
+        "," +
+        destination.longitude.toString();
+    String request = '$baseURL?origin=$or&destination=$dest&key=$kGoogleApiKey';
+    Response response = await Dio().get(request);
+    print(response);
+
+    PolylinePoints polylinePoints = PolylinePoints();
+    List<PointLatLng> result = await polylinePoints.getRouteBetweenCoordinates(
+        kGoogleApiKey,
+        origin.latitude,
+        origin.longitude,
+        destination.latitude,
+        destination.longitude);
+    print(result);
+    if (result.isNotEmpty) {
+      result.forEach((PointLatLng point) {
+        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+      });
+    }
+    _addPolyLine();
+  }
+
+  _addPolyLine() {
+    PolylineId id = PolylineId("poly");
+    Polyline polyline = Polyline(
+        polylineId: id, color: Colors.red, points: polylineCoordinates, width: 2 );
+    polylines[id] = polyline;
+    setState(() {});
   }
 }
