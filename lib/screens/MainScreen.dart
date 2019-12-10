@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -16,6 +15,7 @@ class MainScreen extends StatefulWidget {
 
 class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   GoogleMapController _controller;
+  Geolocator _geolocator = Geolocator();
   bool isLoading = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
@@ -69,8 +69,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       isLoading = true;
     });
     print("Permission now Granted");
-    Position position = await Geolocator()
-        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    //_geolocator.forceAndroidLocationManager = true;
+    Position position = await _geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
 
     _controller.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -82,20 +82,19 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
 
     setState(() {
-      _markers.clear();
-      final marker  = Marker(
-        markerId: MarkerId(position.latitude.toString() + position.longitude.toString()),
-        position: LatLng(position.latitude, position.longitude),
-        infoWindow: InfoWindow(title: "Current Location")
-      );
-      _markers["Current Location"] = marker;
+      /*_markers.clear();
+      final marker = Marker(
+          markerId: MarkerId(
+              position.latitude.toString() + position.longitude.toString()),
+          position: LatLng(position.latitude, position.longitude),
+          infoWindow: InfoWindow(title: "Current Location"));
+      _markers["Current Location"] = marker;*/
       isLoading = false;
     });
   }
 
   void _onMapCreated(GoogleMapController controller) {
     _controller = controller;
-
   }
 
   @override
@@ -111,6 +110,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               onMapCreated: _onMapCreated,
               initialCameraPosition: CameraPosition(target: _center, zoom: 15),
               markers: _markers.values.toSet(),
+              myLocationEnabled: true,
+              myLocationButtonEnabled: true,
+              mapType: MapType.normal,
             ),
             showCircularProgress()
           ],
