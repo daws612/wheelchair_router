@@ -18,7 +18,7 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   GoogleMapController _controller;
   Geolocator _geolocator = Geolocator();
-  bool _isLoading = false;
+  bool _isLoading = false, _destinationSet = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final Map<String, Marker> _markers = {};
@@ -127,7 +127,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       hintText: "Search your destination...",
                       border: InputBorder.none,
                       hintStyle: TextStyle(color: Colors.grey)),
-                  onTap: () { _navigateAndDisplaySelection(context); },
+                  onTap: () {
+                    _navigateAndDisplaySelection(context);
+                  },
                 ),
                 actions: <Widget>[
                   IconButton(
@@ -146,7 +148,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 ],
               ),
             ),
-            showCircularProgress()
+            showCircularProgress(),
+            showGetDirectionsButton(),
           ],
         ));
   }
@@ -178,25 +181,65 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
   }
 
+  Widget showGetDirectionsButton() {
+    if (_destinationSet) {
+      return new Stack(
+        children: [
+          Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                width: 180,
+                child: RaisedButton(
+                  onPressed: () {},
+                  child: const Text('Get Directions'),
+                  color: Theme.of(context).primaryColor,
+                  textColor: Colors.white,
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: new BorderRadius.circular(18.0),
+                      side: BorderSide(color: Theme.of(context).accentColor)),
+                ),
+              ))
+        ],
+      );
+    } else
+      return Container(
+        width: 0,
+        height: 0,
+      );
+  }
+
   _navigateAndDisplaySelection(BuildContext context) async {
     // Navigator.push returns a Future that completes after calling
     // Navigator.pop on the Selection Screen.
     final PlacesDetailsResponse result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => PlacesSearchScreen(mapController: _controller,)),
+      MaterialPageRoute(
+          builder: (context) => PlacesSearchScreen(
+                mapController: _controller,
+              )),
     );
-    if(result != null) {
+    if (result != null) {
       _markers.clear();
       final location = result.result.geometry.location;
       final m = Marker(
-        markerId: MarkerId(
-           location.lat.toString() + location.lng.toString()
+          markerId: MarkerId(location.lat.toString() + location.lng.toString()),
+          position: LatLng(location.lat, location.lng),
+          infoWindow: InfoWindow(title: "Destination"));
+      _markers["Destination"] = m;
+
+      _controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(location.lat, location.lng),
+            zoom: 15.0,
+          ),
         ),
-        position: LatLng(location.lat, location.lng),
-        infoWindow: InfoWindow(title: "Destination")
       );
-     _markers["Current Location"] = m;
+
+      setState(() {
+        _destinationSet = true;
+      });
     }
   }
 }
-
