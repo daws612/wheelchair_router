@@ -27,6 +27,7 @@ dependencies:
   permission_handler: ^4.0.0
   google_maps_flutter: ^0.5.21+14
   geolocator: '^5.0.0'
+  geocoder: ^0.2.1
 
 dev_dependencies:
   flutter_test:
@@ -38,6 +39,11 @@ dev_dependencies:
 
 # The following section is specific to Flutter.
 flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
   assets:
     - assets/images/
 
@@ -45,11 +51,6 @@ flutter_icons:
   android: true
   ios: true
   image_path: "assets/images/kocaeli_logo.jpg"
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
-  uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

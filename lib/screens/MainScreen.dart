@@ -70,7 +70,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     });
     print("Permission now Granted");
     //_geolocator.forceAndroidLocationManager = true;
-    Position position = await _geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    Position position = await _geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
 
     _controller.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -101,9 +102,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
         key: _scaffoldKey,
-        appBar: AppBar(
-          title: Text(widget.title),
-        ),
+        // appBar: AppBar(
+        //   title: Text(widget.title),
+        // ),
         body: Stack(
           children: <Widget>[
             GoogleMap(
@@ -112,7 +113,45 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               markers: _markers.values.toSet(),
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
+              padding: EdgeInsets.only(top: 100.0,),
               mapType: MapType.normal,
+            ),
+            Positioned(
+              top: 50,
+              right: 15,
+              left: 15,
+              child: Container(
+                color: Colors.white,
+                child: Row(
+                  children: <Widget>[
+                    IconButton(
+                      color: Theme.of(context).accentColor,
+                      icon: Icon(Icons.menu),
+                      onPressed: () {print('Tapped hamburger');},
+                    ),
+                    Expanded(
+                      child: TextField(
+                        cursorColor: Colors.black,
+                        keyboardType: TextInputType.text,
+                        textInputAction: TextInputAction.go,
+                        decoration: InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding:
+                                EdgeInsets.symmetric(horizontal: 15),
+                            hintText: "Search..."),
+                            onSubmitted: (value) {print('Seatch this: ' + value);},
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: CircleAvatar(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        backgroundImage: AssetImage('assets/images/kocaeli_logo.jpg'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             showCircularProgress()
           ],
