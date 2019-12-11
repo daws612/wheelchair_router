@@ -7,6 +7,11 @@ import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
+
+const kGoogleApiKey = "AIzaSyByv2kxHAnj0FaZHUdqe6cb2MJbaZEeQsc";
+DirectionsAPI.GoogleMapsDirections directions =
+    DirectionsAPI.GoogleMapsDirections(apiKey: kGoogleApiKey);
 
 class MainScreen extends StatefulWidget {
   MainScreen({this.title});
@@ -20,7 +25,10 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   GoogleMapController _controller;
   Geolocator _geolocator = Geolocator();
-  bool _isLoading = false, _destinationSet = false, _originVisible = true, _originSet = false;
+  bool _isLoading = false,
+      _destinationSet = false,
+      _originVisible = true,
+      _originSet = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final Map<String, Marker> _markers = {};
@@ -117,78 +125,80 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               mapType: MapType.normal,
             ),
             Positioned(
-              // To take AppBar Size only
-              top: 50.0,
-              left: 20.0,
-              right: 20.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(),
-                  borderRadius: new BorderRadius.circular(15.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 16.0),
-                        child: Icon(
-                          Icons.menu,
-                          color: Theme.of(context).accentColor,
+                // To take AppBar Size only
+                top: 50.0,
+                left: 20.0,
+                right: 20.0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(),
+                    borderRadius: new BorderRadius.circular(15.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0, top: 16.0),
+                          child: Icon(
+                            Icons.menu,
+                            color: Theme.of(context).accentColor,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            children: <Widget>[
-                              //Origin text field
-                              Visibility(
-                                visible: _originVisible,
-                                child: TextField(
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              children: <Widget>[
+                                //Origin text field
+                                Visibility(
+                                  visible: _originVisible,
+                                  child: TextField(
+                                    decoration: InputDecoration(
+                                        hintText: "Search your origin...",
+                                        border: InputBorder.none,
+                                        hintStyle:
+                                            TextStyle(color: Colors.grey)),
+                                    onTap: () {
+                                      _navigateAndDisplaySelection(
+                                          context, true);
+                                    },
+                                  ),
+                                ),
+                                //Destination text field
+                                TextField(
                                   decoration: InputDecoration(
-                                      hintText: "Search your origin...",
+                                      hintText: "Search your destination...",
                                       border: InputBorder.none,
                                       hintStyle: TextStyle(color: Colors.grey)),
                                   onTap: () {
-                                    _navigateAndDisplaySelection(context, true);
+                                    _navigateAndDisplaySelection(
+                                        context, false);
                                   },
                                 ),
-                              ),
-                              //Destination text field
-                              TextField(
-                                decoration: InputDecoration(
-                                    hintText: "Search your destination...",
-                                    border: InputBorder.none,
-                                    hintStyle: TextStyle(color: Colors.grey)),
-                                onTap: () {
-                                  _navigateAndDisplaySelection(context, false);
-                                },
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.search,
-                            color: Theme.of(context).accentColor),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        padding: const EdgeInsets.only(right: 8.0, top: 8.0),
-                        icon: CircleAvatar(
-                          backgroundImage:
-                              AssetImage('assets/images/kocaeli_logo.jpg'),
+                        IconButton(
+                          icon: Icon(Icons.search,
+                              color: Theme.of(context).accentColor),
+                          onPressed: () {},
                         ),
-                        onPressed: () {},
-                      ),
-                    ],
+                        IconButton(
+                          padding: const EdgeInsets.only(right: 8.0, top: 8.0),
+                          icon: CircleAvatar(
+                            backgroundImage:
+                                AssetImage('assets/images/kocaeli_logo.jpg'),
+                          ),
+                          onPressed: () {},
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              )
-            ),
+                )),
             showCircularProgress(),
             showGetDirectionsButton(),
           ],
@@ -260,7 +270,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       MaterialPageRoute(
           builder: (context) => PlacesSearchScreen(
                 mapController: _controller,
-                hintText: origin ? "Search your origin..." : "Search your destination...",
+                hintText: origin
+                    ? "Search your origin..."
+                    : "Search your destination...",
               )),
     );
     if (result != null) {
@@ -268,7 +280,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       final m = Marker(
           markerId: MarkerId(location.lat.toString() + location.lng.toString()),
           position: LatLng(location.lat, location.lng),
-          infoWindow: InfoWindow(title: origin ? "Origin" : "Destination" ));
+          infoWindow: InfoWindow(title: origin ? "Origin" : "Destination"));
       origin ? _markers["Origin"] = m : _markers["Destination"] = m;
 
       _controller.animateCamera(
@@ -289,41 +301,53 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   _getDirections() async {
     polylineCoordinates.clear();
     polylines.clear();
-    String baseURL = 'https://maps.googleapis.com/maps/api/directions/json';
     _originVisible = true;
 
     LatLng destination = _markers["Destination"].position;
     Position lastKnownPosition = await _geolocator.getLastKnownPosition(
         locationPermissionLevel: GeolocationPermission.locationAlways);
-    LatLng origin = _originSet ? _markers["Origin"].position : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
-    String or = origin.latitude.toString() + "," + origin.longitude.toString();
-    String dest = destination.latitude.toString() +
-        "," +
-        destination.longitude.toString();
-    String request = '$baseURL?origin=$or&destination=$dest&key=$kGoogleApiKey';
-    Response response = await Dio().get(request);
-    print(response);
+    LatLng origin = _originSet
+        ? _markers["Origin"].position
+        : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
+
+    //Use static origin and destination to map 3 different routes
+    DirectionsAPI.DirectionsResponse res =
+        await directions.directionsWithLocation(
+            //Location(origin.latitude, origin.longitude),
+            Location(40.763221, 29.925132),
+            //Location(destination.latitude, destination.longitude),
+            Location(40.765618, 29.925497),
+            alternatives: true,
+            travelMode: TravelMode.walking);
+
+    List<DirectionsAPI.Route> rota = res.routes;
 
     PolylinePoints polylinePoints = PolylinePoints();
-    List<PointLatLng> result = await polylinePoints.getRouteBetweenCoordinates(
-        kGoogleApiKey,
-        origin.latitude,
-        origin.longitude,
-        destination.latitude,
-        destination.longitude);
-    print(result);
-    if (result.isNotEmpty) {
-      result.forEach((PointLatLng point) {
-        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-      });
-    }
-    _addPolyLine();
+
+    int index = -1;
+    rota.forEach((DirectionsAPI.Route route) {
+      index++;
+      List<PointLatLng> result =
+          polylinePoints.decodePolyline(route.overviewPolyline.points);
+      print(result);
+
+      if (result.isNotEmpty) {
+        result.forEach((PointLatLng point) {
+          polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+        });
+      }
+      _addPolyLine(index);
+    });
   }
 
-  _addPolyLine() {
-    PolylineId id = PolylineId("poly");
+  _addPolyLine(int index) {
+    List<MaterialColor> colors = [Colors.red, Colors.blue, Colors.green, Colors.yellow];
+    PolylineId id = PolylineId("poly" + index.toString());
     Polyline polyline = Polyline(
-        polylineId: id, color: Colors.red, points: polylineCoordinates, width: 2 );
+        polylineId: id,
+        color: colors[index],
+        points: polylineCoordinates,
+        width: 2);
     polylines[id] = polyline;
     setState(() {});
   }
