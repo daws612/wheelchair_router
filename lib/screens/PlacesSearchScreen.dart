@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_webservice/places.dart';
 
@@ -139,7 +140,6 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
                   },
                 ))
             .toList(),
-      //list,
     );
   }
 
@@ -151,16 +151,29 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
     });
 
     PlacesDetailsResponse place = await _places.getDetailsByPlaceId(placeId);
+    Position lastKnownPosition = await Geolocator().getLastKnownPosition(
+        locationPermissionLevel: GeolocationPermission.locationAlways);
+    String origin = await _getAddress(lastKnownPosition);
 
     if (mounted) {
       setState(() {
         this.isLoading = false;
         if (place.status == "OK") {
-          Navigator.pop(context, place);
+          Navigator.pop(context, {"selectedAddress":place, "currentLoc":origin});
         } else {
           this.errorLoading = place.errorMessage;
         }
       });
     }
+  }
+
+  Future<String> _getAddress(Position pos) async {
+    List<Placemark> placemarks = await Geolocator()
+        .placemarkFromCoordinates(pos.latitude, pos.longitude);
+    if (placemarks != null && placemarks.isNotEmpty) {
+      final Placemark pos = placemarks[0];
+      return pos.thoroughfare + ', ' + pos.subLocality + ' ' + pos.locality + ' ' + pos.country;
+    }
+    return "";
   }
 }

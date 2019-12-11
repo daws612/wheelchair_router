@@ -135,72 +135,87 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               ),
               mapType: MapType.normal,
             ),
+            showOriginTextField(),
             Positioned(
-              // To take AppBar Size only
-              top: 50.0,
-              left: 20.0,
-              right: 20.0,
-              child: AppBar(
-                backgroundColor: Colors.white,
-                leading: Icon(
-                          Icons.menu,
-                          color: Theme.of(context).accentColor,
-                        ),
-                primary: true,
-                title: TextField(
-                  controller: _originController,
-                  decoration: InputDecoration(
-                      hintText: "Search your origin...",
-                      border: InputBorder.none,
-                      hintStyle: TextStyle(color: Colors.grey)),
-                  onTap: () { _navigateAndDisplaySelection(context, true); },
-                ),
-                actions: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.search,
-                        color: Theme.of(context).accentColor),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    icon: CircleAvatar(
-                      backgroundImage:
-                          AssetImage('assets/images/kocaeli_logo.jpg'),
+                // To take AppBar Size only
+                top: _destinationSet ? 115.0 : 50.0,
+                left: 20.0,
+                right: 20.0,
+                child: AppBar(
+                    backgroundColor: Colors.white,
+                    primary: false,
+                    title: TextField(
+                      controller: _destinationController,
+                      decoration: InputDecoration(
+                          hintText: "Search your destination...",
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(color: Colors.grey)),
+                      onTap: () {
+                        _navigateAndDisplaySelection(context, false);
+                      },
                     ),
-                    onPressed: () {},
-                  ),
-                ]
-              )
-            ),
-            Positioned(
-              // To take AppBar Size only
-              top: 145.0,
-              left: 20.0,
-              right: 20.0,
-              child: AppBar(
-                backgroundColor: Colors.white,
-                primary: false,
-                title: TextField(
-                  controller: _destinationController,
-                  decoration: InputDecoration(
-                      hintText: "Search your destination...",
-                      border: InputBorder.none,
-                      hintStyle: TextStyle(color: Colors.grey)),
-                  onTap: () { _navigateAndDisplaySelection(context, false); },
-                ),
-                actions: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.search,
-                        color: Theme.of(context).accentColor),
-                    onPressed: () {},
-                  ),
-                ]
-              )
-            ),
+                    actions: <Widget>[
+                      IconButton(
+                        icon: Icon(Icons.search,
+                            color: Theme.of(context).accentColor),
+                        onPressed: () {},
+                      ),
+                      IconButton(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        icon: CircleAvatar(
+                          backgroundImage:
+                              AssetImage('assets/images/kocaeli_logo.jpg'),
+                        ),
+                        onPressed: () {},
+                      ),
+                    ])),
             showCircularProgress(),
             showGetDirectionsButton(),
           ],
         ));
+  }
+
+  Widget showOriginTextField() {
+    if (_destinationSet) {
+      return Positioned(
+          // To take AppBar Size only
+          top: 50.0,
+          left: 20.0,
+          right: 20.0,
+          child: AppBar(
+              backgroundColor: Colors.white,
+              primary: false,
+              title: TextField(
+                controller: _originController,
+                decoration: InputDecoration(
+                    hintText: "Search your origin...",
+                    border: InputBorder.none,
+                    hintStyle: TextStyle(color: Colors.grey)),
+                onTap: () {
+                  _navigateAndDisplaySelection(context, true);
+                },
+              ),
+              actions: <Widget>[
+                IconButton(
+                  icon:
+                      Icon(Icons.search, color: Theme.of(context).accentColor),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  icon: CircleAvatar(
+                    backgroundImage:
+                        AssetImage('assets/images/kocaeli_logo.jpg'),
+                  ),
+                  onPressed: () {},
+                ),
+              ]));
+    }
+
+    return Container(
+      width: 0,
+      height: 0,
+    );
   }
 
   Widget showCircularProgress() {
@@ -263,7 +278,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   _navigateAndDisplaySelection(BuildContext context, bool origin) async {
     // Navigator.push returns a Future that completes after calling
     // Navigator.pop on the Selection Screen.
-    final PlacesDetailsResponse result = await Navigator.push(
+    final Map<String, Object> result = await Navigator.push(
       context,
       MaterialPageRoute(
           builder: (context) => PlacesSearchScreen(
@@ -274,11 +289,13 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               )),
     );
     if (result != null) {
-      final location = result.result.geometry.location;
+      PlacesDetailsResponse selectedAddress = result["selectedAddress"];
+      final location = selectedAddress.result.geometry.location;
       final m = Marker(
           markerId: MarkerId(location.lat.toString() + location.lng.toString()),
           position: LatLng(location.lat, location.lng),
-          infoWindow: InfoWindow(title: origin ? "Origin" : "Destination"));
+          infoWindow: InfoWindow(title: origin ? "Origin" : "Destination"),
+          icon: BitmapDescriptor.defaultMarkerWithHue(origin ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueRed));
       origin ? _markers["Origin"] = m : _markers["Destination"] = m;
 
       _controller.animateCamera(
@@ -292,7 +309,12 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       setState(() {
         origin ? _originSet = true : _destinationSet = true;
-        origin ? _originController.text = result.result.formattedAddress : _destinationController.text = result.result.formattedAddress;
+        String originAddress = _originSet
+            ? selectedAddress.result.formattedAddress
+            : result["currentLoc"];
+        _originController.text = originAddress;
+        if (!origin)
+          _destinationController.text = selectedAddress.result.formattedAddress;
       });
     }
   }
@@ -339,19 +361,29 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   _addPolyLine(int index, List<LatLng> polylineCoordinates) {
-    List<MaterialColor> colors = [Colors.red, Colors.blue, Colors.green, Colors.yellow];
-    List<List<PatternItem>> patterns = [[PatternItem.dot], [PatternItem.dash(5)], [PatternItem.gap(5)]];
+    List<MaterialColor> colors = [
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.yellow
+    ];
+    List<List<PatternItem>> patterns = [
+      [PatternItem.dot],
+      [PatternItem.dash(5)],
+      [PatternItem.gap(5)]
+    ];
     PolylineId id = PolylineId("poly" + index.toString());
     Polyline polyline = Polyline(
-        polylineId: id,
-        color: Colors.primaries[Random().nextInt(Colors.primaries.length)], //colors[index],
-        points: polylineCoordinates,
-        width: 2,
-        geodesic: true,
-        startCap: Cap.buttCap,
-        endCap: Cap.roundCap,
-        //patterns: patterns[index]
-        );
+      polylineId: id,
+      color: Colors.primaries[
+          Random().nextInt(Colors.primaries.length)], //colors[index],
+      points: polylineCoordinates,
+      width: 2,
+      geodesic: true,
+      startCap: Cap.buttCap,
+      endCap: Cap.roundCap,
+      //patterns: patterns[index]
+    );
     polylines[id] = polyline;
     setState(() {});
   }
