@@ -35,7 +35,17 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final Map<String, Marker> _markers = {};
 
+  final _originController = TextEditingController();
+  final _destinationController = TextEditingController();
+
   Map<PolylineId, Polyline> polylines = {};
+
+  @override
+  void dispose() {
+    _originController.dispose();
+    _destinationController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -126,80 +136,67 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               mapType: MapType.normal,
             ),
             Positioned(
-                // To take AppBar Size only
-                top: 50.0,
-                left: 20.0,
-                right: 20.0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(),
-                    borderRadius: new BorderRadius.circular(15.0),
+              // To take AppBar Size only
+              top: 50.0,
+              left: 20.0,
+              right: 20.0,
+              child: AppBar(
+                backgroundColor: Colors.white,
+                leading: Icon(
+                          Icons.menu,
+                          color: Theme.of(context).accentColor,
+                        ),
+                primary: true,
+                title: TextField(
+                  controller: _originController,
+                  decoration: InputDecoration(
+                      hintText: "Search your origin...",
+                      border: InputBorder.none,
+                      hintStyle: TextStyle(color: Colors.grey)),
+                  onTap: () { _navigateAndDisplaySelection(context, true); },
+                ),
+                actions: <Widget>[
+                  IconButton(
+                    icon: Icon(Icons.search,
+                        color: Theme.of(context).accentColor),
+                    onPressed: () {},
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0, top: 16.0),
-                          child: Icon(
-                            Icons.menu,
-                            color: Theme.of(context).accentColor,
-                          ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              children: <Widget>[
-                                //Origin text field
-                                Visibility(
-                                  visible: _originVisible,
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                        hintText: "Search your origin...",
-                                        border: InputBorder.none,
-                                        hintStyle:
-                                            TextStyle(color: Colors.grey)),
-                                    onTap: () {
-                                      _navigateAndDisplaySelection(
-                                          context, true);
-                                    },
-                                  ),
-                                ),
-                                //Destination text field
-                                TextField(
-                                  decoration: InputDecoration(
-                                      hintText: "Search your destination...",
-                                      border: InputBorder.none,
-                                      hintStyle: TextStyle(color: Colors.grey)),
-                                  onTap: () {
-                                    _navigateAndDisplaySelection(
-                                        context, false);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.search,
-                              color: Theme.of(context).accentColor),
-                          onPressed: () {},
-                        ),
-                        IconButton(
-                          padding: const EdgeInsets.only(right: 8.0, top: 8.0),
-                          icon: CircleAvatar(
-                            backgroundImage:
-                                AssetImage('assets/images/kocaeli_logo.jpg'),
-                          ),
-                          onPressed: () {},
-                        ),
-                      ],
+                  IconButton(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    icon: CircleAvatar(
+                      backgroundImage:
+                          AssetImage('assets/images/kocaeli_logo.jpg'),
                     ),
+                    onPressed: () {},
                   ),
-                )),
+                ]
+              )
+            ),
+            Positioned(
+              // To take AppBar Size only
+              top: 145.0,
+              left: 20.0,
+              right: 20.0,
+              child: AppBar(
+                backgroundColor: Colors.white,
+                primary: false,
+                title: TextField(
+                  controller: _destinationController,
+                  decoration: InputDecoration(
+                      hintText: "Search your destination...",
+                      border: InputBorder.none,
+                      hintStyle: TextStyle(color: Colors.grey)),
+                  onTap: () { _navigateAndDisplaySelection(context, false); },
+                ),
+                actions: <Widget>[
+                  IconButton(
+                    icon: Icon(Icons.search,
+                        color: Theme.of(context).accentColor),
+                    onPressed: () {},
+                  ),
+                ]
+              )
+            ),
             showCircularProgress(),
             showGetDirectionsButton(),
           ],
@@ -295,6 +292,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       setState(() {
         origin ? _originSet = true : _destinationSet = true;
+        origin ? _originController.text = result.result.formattedAddress : _destinationController.text = result.result.formattedAddress;
       });
     }
   }
