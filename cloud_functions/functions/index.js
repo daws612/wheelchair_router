@@ -84,12 +84,16 @@ function calculateSlope(response, map) {
 
 function displayLocationElevation(location1, location2, index, pathIndex, callback) {
     googleMapsClient.elevationAlongPath({
-        locations: [location1, location2], function(err, response) {
-            if (!err && response.status === 200) {
+        samples: 2,
+        path: [location1, location2/*{ lat: location1.latitude, lng: location1.longitude }, 
+        { lat: location2.latitude, lng: location2.longitude }*/]
+    },
+        function (response) {
+            if (response.status === 200) {
                 return response.json.results
             }
-        },
-    });
+
+        });
     // elevator.getElevationForLocations({
     //     'locations': [location1, location2]
     // }, function (results, status) {
