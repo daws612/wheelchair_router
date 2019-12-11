@@ -8,9 +8,10 @@ const kGoogleApiKey = "AIzaSyByv2kxHAnj0FaZHUdqe6cb2MJbaZEeQsc";
 GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
 
 class PlacesSearchScreen extends StatefulWidget {
-  PlacesSearchScreen({@required this.mapController});
+  PlacesSearchScreen({@required this.mapController,this.hintText});
 
   final GoogleMapController mapController;
+  final String hintText;
 
   @override
   State<StatefulWidget> createState() => PlacesSearchScreenState();
@@ -106,7 +107,7 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
             controller: _searchController,
             autofocus: true,
             decoration: InputDecoration(
-              hintText: "Search your destination...",
+              hintText: widget.hintText,
               border: InputBorder.none,
               hintStyle: TextStyle(color: Colors.grey),
             ),

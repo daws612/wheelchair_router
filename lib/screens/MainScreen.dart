@@ -20,7 +20,7 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   GoogleMapController _controller;
   Geolocator _geolocator = Geolocator();
-  bool _isLoading = false, _destinationSet = false;
+  bool _isLoading = false, _destinationSet = false, _originVisible = true, _originSet = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final Map<String, Marker> _markers = {};
@@ -121,38 +121,73 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               top: 50.0,
               left: 20.0,
               right: 20.0,
-              child: AppBar(
-                backgroundColor: Colors.white,
-                leading: Icon(
-                  Icons.menu,
-                  color: Theme.of(context).accentColor,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(),
+                  borderRadius: new BorderRadius.circular(15.0),
                 ),
-                primary: false,
-                title: TextField(
-                  decoration: InputDecoration(
-                      hintText: "Search your destination...",
-                      border: InputBorder.none,
-                      hintStyle: TextStyle(color: Colors.grey)),
-                  onTap: () {
-                    _navigateAndDisplaySelection(context);
-                  },
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0, top: 16.0),
+                        child: Icon(
+                          Icons.menu,
+                          color: Theme.of(context).accentColor,
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: <Widget>[
+                              //Origin text field
+                              Visibility(
+                                visible: _originVisible,
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                      hintText: "Search your origin...",
+                                      border: InputBorder.none,
+                                      hintStyle: TextStyle(color: Colors.grey)),
+                                  onTap: () {
+                                    _navigateAndDisplaySelection(context, true);
+                                  },
+                                ),
+                              ),
+                              //Destination text field
+                              TextField(
+                                decoration: InputDecoration(
+                                    hintText: "Search your destination...",
+                                    border: InputBorder.none,
+                                    hintStyle: TextStyle(color: Colors.grey)),
+                                onTap: () {
+                                  _navigateAndDisplaySelection(context, false);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.search,
+                            color: Theme.of(context).accentColor),
+                        onPressed: () {},
+                      ),
+                      IconButton(
+                        padding: const EdgeInsets.only(right: 8.0, top: 8.0),
+                        icon: CircleAvatar(
+                          backgroundImage:
+                              AssetImage('assets/images/kocaeli_logo.jpg'),
+                        ),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
                 ),
-                actions: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.search,
-                        color: Theme.of(context).accentColor),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    icon: CircleAvatar(
-                      backgroundImage:
-                          AssetImage('assets/images/kocaeli_logo.jpg'),
-                    ),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
+              )
             ),
             showCircularProgress(),
             showGetDirectionsButton(),
@@ -217,7 +252,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
   }
 
-  _navigateAndDisplaySelection(BuildContext context) async {
+  _navigateAndDisplaySelection(BuildContext context, bool origin) async {
     // Navigator.push returns a Future that completes after calling
     // Navigator.pop on the Selection Screen.
     final PlacesDetailsResponse result = await Navigator.push(
@@ -225,16 +260,16 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       MaterialPageRoute(
           builder: (context) => PlacesSearchScreen(
                 mapController: _controller,
+                hintText: origin ? "Search your origin..." : "Search your destination...",
               )),
     );
     if (result != null) {
-      _markers.clear();
       final location = result.result.geometry.location;
       final m = Marker(
           markerId: MarkerId(location.lat.toString() + location.lng.toString()),
           position: LatLng(location.lat, location.lng),
-          infoWindow: InfoWindow(title: "Destination"));
-      _markers["Destination"] = m;
+          infoWindow: InfoWindow(title: origin ? "Origin" : "Destination" ));
+      origin ? _markers["Origin"] = m : _markers["Destination"] = m;
 
       _controller.animateCamera(
         CameraUpdate.newCameraPosition(
@@ -246,7 +281,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
 
       setState(() {
-        _destinationSet = true;
+        origin ? _originSet = true : _destinationSet = true;
       });
     }
   }
@@ -255,10 +290,12 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     polylineCoordinates.clear();
     polylines.clear();
     String baseURL = 'https://maps.googleapis.com/maps/api/directions/json';
+    _originVisible = true;
 
     LatLng destination = _markers["Destination"].position;
-    Position origin = await _geolocator.getLastKnownPosition(
+    Position lastKnownPosition = await _geolocator.getLastKnownPosition(
         locationPermissionLevel: GeolocationPermission.locationAlways);
+    LatLng origin = _originSet ? _markers["Origin"].position : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
     String or = origin.latitude.toString() + "," + origin.longitude.toString();
     String dest = destination.latitude.toString() +
         "," +
