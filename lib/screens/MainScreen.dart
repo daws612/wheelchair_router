@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -34,7 +36,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final Map<String, Marker> _markers = {};
 
   Map<PolylineId, Polyline> polylines = {};
-  List<LatLng> polylineCoordinates = [];
 
   @override
   void initState() {
@@ -299,7 +300,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   _getDirections() async {
-    polylineCoordinates.clear();
     polylines.clear();
     _originVisible = true;
 
@@ -326,28 +326,34 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     int index = -1;
     rota.forEach((DirectionsAPI.Route route) {
+      List<LatLng> polylineCoordinates = [];
       index++;
       List<PointLatLng> result =
           polylinePoints.decodePolyline(route.overviewPolyline.points);
-      print(result);
 
       if (result.isNotEmpty) {
         result.forEach((PointLatLng point) {
           polylineCoordinates.add(LatLng(point.latitude, point.longitude));
         });
       }
-      _addPolyLine(index);
+      _addPolyLine(index, polylineCoordinates);
     });
   }
 
-  _addPolyLine(int index) {
+  _addPolyLine(int index, List<LatLng> polylineCoordinates) {
     List<MaterialColor> colors = [Colors.red, Colors.blue, Colors.green, Colors.yellow];
+    List<List<PatternItem>> patterns = [[PatternItem.dot], [PatternItem.dash(5)], [PatternItem.gap(5)]];
     PolylineId id = PolylineId("poly" + index.toString());
     Polyline polyline = Polyline(
         polylineId: id,
-        color: colors[index],
+        color: Colors.primaries[Random().nextInt(Colors.primaries.length)], //colors[index],
         points: polylineCoordinates,
-        width: 2);
+        width: 2,
+        geodesic: true,
+        startCap: Cap.buttCap,
+        endCap: Cap.roundCap,
+        //patterns: patterns[index]
+        );
     polylines[id] = polyline;
     setState(() {});
   }
