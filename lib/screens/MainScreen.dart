@@ -131,7 +131,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
               padding: EdgeInsets.only(
-                top: 100.0,
+                top: _destinationSet ? 170 : 100.0,
               ),
               mapType: MapType.normal,
             ),
@@ -145,6 +145,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                     backgroundColor: Colors.white,
                     primary: false,
                     title: TextField(
+                      readOnly: true,
                       controller: _destinationController,
                       decoration: InputDecoration(
                           hintText: "Search your destination...",
@@ -158,7 +159,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       IconButton(
                         icon: Icon(Icons.search,
                             color: Theme.of(context).accentColor),
-                        onPressed: () {},
+                        onPressed: () {_navigateAndDisplaySelection(context, false);},
                       ),
                       IconButton(
                         padding: const EdgeInsets.only(right: 8.0),
@@ -186,6 +187,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               backgroundColor: Colors.white,
               primary: false,
               title: TextField(
+                readOnly: true,
                 controller: _originController,
                 decoration: InputDecoration(
                     hintText: "Search your origin...",
@@ -199,7 +201,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 IconButton(
                   icon:
                       Icon(Icons.search, color: Theme.of(context).accentColor),
-                  onPressed: () {},
+                  onPressed: () {_navigateAndDisplaySelection(context, true);},
                 ),
                 IconButton(
                   padding: const EdgeInsets.only(right: 8.0),
