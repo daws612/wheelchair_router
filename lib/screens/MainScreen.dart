@@ -413,7 +413,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       index++;
       List<PointLatLng> result =
           polylinePoints.decodePolyline(route.overviewPolyline.points);
-      print("polys:: " + index.toString() + " :: " + result.length.toString());
+      print(result);
 
       if (result.isNotEmpty) {
         result.forEach((PointLatLng point) {

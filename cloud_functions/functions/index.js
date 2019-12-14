@@ -70,13 +70,11 @@ async function calculateSlope(req, response) {
             path = decode(points);
             for (var p = 0; p < path.length - 1; p++) {
                 //get slope between these two points.
-                displayLocationElevation(path[p], path[p + 1], p, j, function (err, slope, index, pathIndex) {
+                displayLocationElevation(path[p], path[p + 1], p, j, function (err, slope, loc1, loc2, pathIndex) {
                     if(err){
                         return reject(err);
                     }
                     receivedPath++;
-                    var loc1 = path[index];
-                    var loc2 = path[index + 1];
                     slopes.push({ loc1, loc2, slope, pathIndex })
                     if (receivedPath >= totalPoints) {
                         resolve(slopes);
@@ -107,7 +105,7 @@ function displayLocationElevation(location1, location2, index, pathIndex, callba
                 var rise = elevationResponse.json.results[1].elevation - elevationResponse.json.results[0].elevation; // if negative, down slope
                 var slope = (rise / run) * 100.0;
                 console.log(slope);
-                callback(err, slope, index, pathIndex);
+                callback(err, slope, location1, location2, pathIndex);
                 return true;
                 //req.send(JSON.stringify(elevationResponse));
             }
