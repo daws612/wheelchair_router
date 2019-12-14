@@ -31,6 +31,8 @@ dependencies:
   flutter_google_places: ^0.2.3
   dio: ^2.1.13
   flutter_polyline_points: ^0.1.0
+  cloud_functions: ^0.4.1+6
+  http: ^0.12.0+2
 
 dev_dependencies:
   flutter_test:

@@ -61,10 +61,11 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
       errorLoading = result.errorMessage;
     }
 
-    setState(() {
-      _title = "Results";
-      isLoading = false;
-    });
+    if(mounted)
+      setState(() {
+        _title = "Results";
+        isLoading = false;
+      });
   }
 
   @override
@@ -153,13 +154,14 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
     PlacesDetailsResponse place = await _places.getDetailsByPlaceId(placeId);
     Position lastKnownPosition = await Geolocator().getLastKnownPosition(
         locationPermissionLevel: GeolocationPermission.locationAlways);
-    String origin = await _getAddress(lastKnownPosition);
+    Placemark pos = await _getAddress(lastKnownPosition);
+    String currentLoc = pos != null ? pos.thoroughfare + ', ' + pos.subLocality + ' ' + pos.locality + ' ' + pos.country : "";
 
     if (mounted) {
       setState(() {
         this.isLoading = false;
         if (place.status == "OK") {
-          Navigator.pop(context, {"selectedAddress":place, "currentLoc":origin});
+          Navigator.pop(context, {"selectedAddress":place, "currentLoc":currentLoc, "currentPosition": pos});
         } else {
           this.errorLoading = place.errorMessage;
         }
@@ -167,13 +169,13 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
     }
   }
 
-  Future<String> _getAddress(Position pos) async {
+  Future<Placemark> _getAddress(Position pos) async {
     List<Placemark> placemarks = await Geolocator()
         .placemarkFromCoordinates(pos.latitude, pos.longitude);
     if (placemarks != null && placemarks.isNotEmpty) {
       final Placemark pos = placemarks[0];
-      return pos.thoroughfare + ', ' + pos.subLocality + ' ' + pos.locality + ' ' + pos.country;
+      return pos;
     }
-    return "";
+    return null;
   }
 }

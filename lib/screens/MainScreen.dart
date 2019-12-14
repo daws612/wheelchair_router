@@ -1,5 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -29,7 +30,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Geolocator _geolocator = Geolocator();
   bool _isLoading = false,
       _destinationSet = false,
-      _originVisible = true,
       _originSet = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
@@ -220,13 +220,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Widget showCircularProgress() {
     if (_isLoading) {
-      //return Center(child: CircularProgressIndicator(backgroundColor: Theme.of(context).primaryColor,));
       return new Stack(
         children: [
-          // new Opacity(
-          //   opacity: 0.2,
-          //   child: const ModalBarrier(dismissible: true, color: Colors.black),
-          // ),
           new Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -255,7 +250,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 width: 180,
                 child: RaisedButton(
                   onPressed: () {
-                    _getDirections();
+                    _getFirebaseDirections();
                   },
                   child: const Text('Get Directions'),
                   color: Theme.of(context).primaryColor,
@@ -295,8 +290,23 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           markerId: MarkerId(location.lat.toString() + location.lng.toString()),
           position: LatLng(location.lat, location.lng),
           infoWindow: InfoWindow(title: origin ? "Origin" : "Destination"),
-          icon: BitmapDescriptor.defaultMarkerWithHue(origin ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueRed));
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+              origin ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueRed));
       origin ? _markers["Origin"] = m : _markers["Destination"] = m;
+
+      //Add origin marker when destination is being set
+      if (!origin && result["currentPosition"] != null) {
+        Placemark origin = result["currentPosition"];
+        final m = Marker(
+            markerId: MarkerId(origin.position.latitude.toString() +
+                origin.position.longitude.toString()),
+            position:
+                LatLng(origin.position.latitude, origin.position.longitude),
+            infoWindow: InfoWindow(title: "Origin"),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueGreen));
+        _markers["Origin"] = m;
+      }
 
       _controller.animateCamera(
         CameraUpdate.newCameraPosition(
@@ -319,9 +329,62 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
+  _getFirebaseDirections() async {
+    polylines.clear();
+
+    LatLng destination = _markers["Destination"].position;
+    Position lastKnownPosition = await _geolocator.getLastKnownPosition(
+        locationPermissionLevel: GeolocationPermission.locationAlways);
+    LatLng origin = _originSet
+        ? _markers["Origin"].position
+        : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
+
+    String params = "?origin=" +
+        origin.latitude.toString() +
+        ',' +
+        origin.longitude.toString() +
+        '&destination=' +
+        destination.latitude.toString() +
+        ',' +
+        destination.longitude.toString();
+
+    var url =
+        'https://us-central1-wheelchair-router.cloudfunctions.net/getDirections?origin=40.763221,29.925132&destination=40.765618,29.925497';
+
+    List<dynamic> polylinesJSON;
+    try {
+      Response response = await Dio().get(url);
+      if (response.statusCode == 200) {
+        polylinesJSON = jsonDecode(response.data);
+
+        int index = -1;
+        if (polylinesJSON.isNotEmpty) {
+          List<PolylineJSON> lines =
+              polylinesJSON.map((i) => PolylineJSON.fromJson(i)).toList();
+
+          lines.forEach((PolylineJSON point) {
+            index++;
+            List<LatLng> polylineCoordinates = [];
+            polylineCoordinates
+                .add(LatLng(point.origin.latitude, point.origin.longitude));
+            polylineCoordinates.add(LatLng(
+                point.destination.latitude, point.destination.longitude));
+            _addPolyLine(index, polylineCoordinates, point.slope, point.routeIndex);
+          });
+        }
+      }
+    } catch (exception) {
+      print(exception);
+    }
+
+    // If the widget was removed from the tree while the message was in flight,
+    // we want to discard the reply rather than calling setState to update our
+    // non-existent appearance.
+    if (!mounted) return;
+  }
+
   _getDirections() async {
     polylines.clear();
-    _originVisible = true;
 
     LatLng destination = _markers["Destination"].position;
     Position lastKnownPosition = await _geolocator.getLastKnownPosition(
@@ -334,9 +397,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     DirectionsAPI.DirectionsResponse res =
         await directions.directionsWithLocation(
             //Location(origin.latitude, origin.longitude),
-            Location(40.763221, 29.925132),
+            Location(40.763221,29.925132),
             //Location(destination.latitude, destination.longitude),
-            Location(40.765618, 29.925497),
+            Location(40.765618,29.925497),
             alternatives: true,
             travelMode: TravelMode.walking);
 
@@ -350,23 +413,25 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       index++;
       List<PointLatLng> result =
           polylinePoints.decodePolyline(route.overviewPolyline.points);
+      print("polys:: " + index.toString() + " :: " + result.length.toString());
 
       if (result.isNotEmpty) {
         result.forEach((PointLatLng point) {
           polylineCoordinates.add(LatLng(point.latitude, point.longitude));
         });
       }
-      _addPolyLine(index, polylineCoordinates);
+      _addPolyLine(index, polylineCoordinates, 0.0, 0);
     });
   }
 
-  _addPolyLine(int index, List<LatLng> polylineCoordinates) {
-    List<MaterialColor> colors = [
-      Colors.red,
-      Colors.blue,
-      Colors.green,
-      Colors.yellow
-    ];
+  _addPolyLine(int index, List<LatLng> polylineCoordinates, double slope, int routeIndex) {
+    MaterialColor slopeColor;
+    if (slope > 7)
+      slopeColor = Colors.red;
+    else if (slope >= -7 && slope <= 7)
+      slopeColor = Colors.green;
+    else if (slope < -7) slopeColor = Colors.blue;
+
     List<List<PatternItem>> patterns = [
       [PatternItem.dot],
       [PatternItem.dash(5)],
@@ -375,16 +440,52 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     PolylineId id = PolylineId("poly" + index.toString());
     Polyline polyline = Polyline(
       polylineId: id,
-      color: Colors.primaries[
-          Random().nextInt(Colors.primaries.length)], //colors[index],
+      color: slopeColor,
       points: polylineCoordinates,
       width: 2,
       geodesic: true,
       startCap: Cap.buttCap,
       endCap: Cap.roundCap,
-      //patterns: patterns[index]
+      patterns: patterns[routeIndex]
     );
     polylines[id] = polyline;
     setState(() {});
+  }
+}
+
+class PolylineJSON {
+  final double slope;
+  final LocationJSON origin;
+  final LocationJSON destination;
+  final int routeIndex;
+
+  PolylineJSON({
+    this.slope,
+    this.origin,
+    this.destination,
+    this.routeIndex,
+  });
+
+  factory PolylineJSON.fromJson(Map<String, dynamic> json) {
+    return new PolylineJSON(
+      slope: json['slope'],
+      origin: LocationJSON.fromJson(json['loc1']),
+      destination: LocationJSON.fromJson(json['loc2']),
+      routeIndex: json['pathIndex'],
+    );
+  }
+}
+
+class LocationJSON {
+  double latitude;
+  double longitude;
+
+  LocationJSON({this.latitude, this.longitude});
+
+  factory LocationJSON.fromJson(Map<String, dynamic> json) {
+    return new LocationJSON(
+      latitude: json['latitude'],
+      longitude: json['longitude'],
+    );
   }
 }
