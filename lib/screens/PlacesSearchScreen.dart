@@ -9,7 +9,7 @@ const kGoogleApiKey = "AIzaSyByv2kxHAnj0FaZHUdqe6cb2MJbaZEeQsc";
 GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
 
 class PlacesSearchScreen extends StatefulWidget {
-  PlacesSearchScreen({@required this.mapController,this.hintText});
+  PlacesSearchScreen({@required this.mapController, this.hintText});
 
   final GoogleMapController mapController;
   final String hintText;
@@ -21,7 +21,7 @@ class PlacesSearchScreen extends StatefulWidget {
 class PlacesSearchScreenState extends State<PlacesSearchScreen> {
   TextEditingController _searchController = new TextEditingController();
   Timer _throttle;
-  String _title = "Loading", errorLoading = "";
+  String errorLoading = "";
   List<Prediction> _placesList;
   bool isLoading = false;
 
@@ -46,24 +46,27 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
   }
 
   void getLocationResults(String input) async {
-    if (input.isEmpty) {
+    if (input.isNotEmpty) {
       setState(() {
-        _title = "Suggestions";
         isLoading = true;
       });
-      return;
+    } else {
+      setState(() {
+        _placesList = [];
+        return;
+      });
     }
 
-    PlacesAutocompleteResponse result = await _places.autocomplete(input);//.queryAutocomplete(input);
+    PlacesAutocompleteResponse result =
+        await _places.autocomplete(input); //.queryAutocomplete(input);
     if (result.status == "OK") {
       _placesList = result.predictions;
     } else {
       errorLoading = result.errorMessage;
     }
 
-    if(mounted)
+    if (mounted)
       setState(() {
-        _title = "Results";
         isLoading = false;
       });
   }
@@ -71,21 +74,17 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
   @override
   Widget build(BuildContext context) {
     Widget bodyChild;
-    String title;
     if (isLoading) {
-      title = "Loading";
       bodyChild = Center(
         child: CircularProgressIndicator(
           value: null,
         ),
       );
     } else if (errorLoading != null && errorLoading.isNotEmpty) {
-      title = "";
       bodyChild = Center(
         child: Text(errorLoading),
       );
     } else if (_placesList == null || _placesList.isEmpty) {
-      title = "";
       bodyChild = Center(
         child: Text('Search...'),
       );
@@ -133,19 +132,18 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
     return ListView(
       //shrinkWrap: true,
       children: _placesList
-            .map((data) => ListTile(
-                  leading: Icon(Icons.place),
-                  title: Text(data.description),
-                  onTap: () {
-                    getAndShowLocation(data.placeId);
-                  },
-                ))
-            .toList(),
+          .map((data) => ListTile(
+                leading: Icon(Icons.place),
+                title: Text(data.description),
+                onTap: () {
+                  getAndShowLocation(data.placeId);
+                },
+              ))
+          .toList(),
     );
   }
 
   void getAndShowLocation(String placeId) async {
-
     setState(() {
       this.isLoading = true;
       this.errorLoading = null;
@@ -155,13 +153,25 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
     Position lastKnownPosition = await Geolocator().getLastKnownPosition(
         locationPermissionLevel: GeolocationPermission.locationAlways);
     Placemark pos = await _getAddress(lastKnownPosition);
-    String currentLoc = pos != null ? pos.thoroughfare + ', ' + pos.subLocality + ' ' + pos.locality + ' ' + pos.country : "";
+    String currentLoc = pos != null
+        ? pos.thoroughfare +
+            ', ' +
+            pos.subLocality +
+            ' ' +
+            pos.locality +
+            ' ' +
+            pos.country
+        : "";
 
     if (mounted) {
       setState(() {
         this.isLoading = false;
         if (place.status == "OK") {
-          Navigator.pop(context, {"selectedAddress":place, "currentLoc":currentLoc, "currentPosition": pos});
+          Navigator.pop(context, {
+            "selectedAddress": place,
+            "currentLoc": currentLoc,
+            "currentPosition": pos
+          });
         } else {
           this.errorLoading = place.errorMessage;
         }

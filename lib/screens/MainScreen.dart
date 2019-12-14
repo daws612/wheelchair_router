@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,7 +7,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
 
 const kGoogleApiKey = "AIzaSyByv2kxHAnj0FaZHUdqe6cb2MJbaZEeQsc";
@@ -39,6 +36,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final _destinationController = TextEditingController();
 
   Map<PolylineId, Polyline> polylines = {};
+
+  String _progressText = 'Loading';
 
   @override
   void dispose() {
@@ -93,6 +92,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void showCurrentLocation() async {
     setState(() {
       _isLoading = true;
+      _progressText = 'Loading your location';
     });
     print("Permission now Granted");
     //_geolocator.forceAndroidLocationManager = true;
@@ -227,7 +227,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 CircularProgressIndicator(),
-                Text('Loading your location'),
+                Text(_progressText),
               ],
             ),
           ),
@@ -295,7 +295,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       origin ? _markers["Origin"] = m : _markers["Destination"] = m;
 
       //Add origin marker when destination is being set
-      if (!origin && result["currentPosition"] != null) {
+      if (!origin && result["currentPosition"] != null && _markers["Origin"] == null) {
         Placemark origin = result["currentPosition"];
         final m = Marker(
             markerId: MarkerId(origin.position.latitude.toString() +
@@ -330,6 +330,11 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   _getFirebaseDirections() async {
+    setState(() {
+      _isLoading = true;
+      _progressText = 'Getting directions...';
+    });
+
     polylines.clear();
 
     LatLng destination = _markers["Destination"].position;
@@ -349,7 +354,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         destination.longitude.toString();
 
     var url =
-        'https://us-central1-wheelchair-router.cloudfunctions.net/getDirections?origin=40.763221,29.925132&destination=40.765618,29.925497';
+        'https://us-central1-wheelchair-router.cloudfunctions.net/getDirections$params';
 
     List<dynamic> polylinesJSON;
     try {
@@ -381,46 +386,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // we want to discard the reply rather than calling setState to update our
     // non-existent appearance.
     if (!mounted) return;
-  }
 
-  _getDirections() async {
-    polylines.clear();
-
-    LatLng destination = _markers["Destination"].position;
-    Position lastKnownPosition = await _geolocator.getLastKnownPosition(
-        locationPermissionLevel: GeolocationPermission.locationAlways);
-    LatLng origin = _originSet
-        ? _markers["Origin"].position
-        : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
-
-    //Use static origin and destination to map 3 different routes
-    DirectionsAPI.DirectionsResponse res =
-        await directions.directionsWithLocation(
-            //Location(origin.latitude, origin.longitude),
-            Location(40.763221,29.925132),
-            //Location(destination.latitude, destination.longitude),
-            Location(40.765618,29.925497),
-            alternatives: true,
-            travelMode: TravelMode.walking);
-
-    List<DirectionsAPI.Route> rota = res.routes;
-
-    PolylinePoints polylinePoints = PolylinePoints();
-
-    int index = -1;
-    rota.forEach((DirectionsAPI.Route route) {
-      List<LatLng> polylineCoordinates = [];
-      index++;
-      List<PointLatLng> result =
-          polylinePoints.decodePolyline(route.overviewPolyline.points);
-      print(result);
-
-      if (result.isNotEmpty) {
-        result.forEach((PointLatLng point) {
-          polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-        });
-      }
-      _addPolyLine(index, polylineCoordinates, 0.0, 0);
+    setState(() {
+      _isLoading = false;
     });
   }
 
@@ -453,6 +421,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 }
 
+//Model to get data from firebase cloud function
 class PolylineJSON {
   final double slope;
   final LocationJSON origin;
