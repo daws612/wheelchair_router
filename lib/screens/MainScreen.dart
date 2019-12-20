@@ -8,6 +8,7 @@ import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
+import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 const kGoogleApiKey = "AIzaSyByv2kxHAnj0FaZHUdqe6cb2MJbaZEeQsc";
 DirectionsAPI.GoogleMapsDirections directions =
@@ -25,9 +26,7 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   GoogleMapController _controller;
   Geolocator _geolocator = Geolocator();
-  bool _isLoading = false,
-      _destinationSet = false,
-      _originSet = false;
+  bool _isLoading = false, _destinationSet = false, _originSet = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final Map<String, Marker> _markers = {};
@@ -39,10 +38,17 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   String _progressText = 'Loading';
 
+  final double _initFabHeight = 120.0;
+  double _fabHeight;
+  double _panelHeightOpen = 575.0;
+  double _panelHeightClosed = 95.0;
+  PanelController _panelController = new PanelController();
+
   @override
   void dispose() {
     _originController.dispose();
     _destinationController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -51,6 +57,11 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.initState();
     _isLoading = false;
     WidgetsBinding.instance.addObserver(this);
+    _fabHeight = _initFabHeight;
+
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _panelController.hide());
+
     PermissionsService()
         .hasPermission(
             PermissionGroup.locationAlways) //check permission returns a Future
@@ -120,60 +131,225 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        key: _scaffoldKey,
-        body: Stack(
-          children: <Widget>[
-            GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: CameraPosition(target: _center, zoom: 15),
-              markers: _markers.values.toSet(),
-              polylines: Set<Polyline>.of(polylines.values),
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
-              padding: EdgeInsets.only(
-                top: _destinationSet ? 170 : 100.0,
-              ),
-              mapType: MapType.normal,
+      key: _scaffoldKey,
+      body: Stack(alignment: Alignment.topCenter, children: <Widget>[
+        SlidingUpPanel(
+          controller: _panelController,
+          maxHeight: _panelHeightOpen,
+          minHeight: _panelHeightClosed,
+          parallaxEnabled: true,
+          parallaxOffset: .5,
+          body: GoogleMap(
+            onMapCreated: _onMapCreated,
+            initialCameraPosition: CameraPosition(target: _center, zoom: 15),
+            markers: _markers.values.toSet(),
+            polylines: Set<Polyline>.of(polylines.values),
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
+            padding: EdgeInsets.only(
+              top: _destinationSet ? 170 : 100.0,
             ),
-            showOriginTextField(),
-            Positioned(
-                // To take AppBar Size only
-                top: _destinationSet ? 115.0 : 50.0,
-                left: 20.0,
-                right: 20.0,
-                child: AppBar(
-                    backgroundColor: Colors.white,
-                    primary: false,
-                    title: TextField(
-                      readOnly: true,
-                      controller: _destinationController,
-                      decoration: InputDecoration(
-                          hintText: "Search your destination...",
-                          border: InputBorder.none,
-                          hintStyle: TextStyle(color: Colors.grey)),
-                      onTap: () {
-                        _navigateAndDisplaySelection(context, false);
-                      },
+            mapType: MapType.normal,
+          ),
+          panel: _panel(),
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(18.0), topRight: Radius.circular(18.0)),
+          onPanelSlide: (double pos) => setState(() {
+            _fabHeight =
+                pos * (_panelHeightOpen - _panelHeightClosed) + _initFabHeight;
+          }),
+        ),
+        showOriginTextField(),
+        Positioned(
+            // To take AppBar Size only
+            top: _destinationSet ? 115.0 : 50.0,
+            left: 20.0,
+            right: 20.0,
+            child: AppBar(
+                backgroundColor: Colors.white,
+                primary: false,
+                title: TextField(
+                  readOnly: true,
+                  controller: _destinationController,
+                  decoration: InputDecoration(
+                      hintText: "Search your destination...",
+                      border: InputBorder.none,
+                      hintStyle: TextStyle(color: Colors.grey)),
+                  onTap: () {
+                    _navigateAndDisplaySelection(context, false);
+                  },
+                ),
+                actions: <Widget>[
+                  IconButton(
+                    icon: Icon(Icons.search,
+                        color: Theme.of(context).accentColor),
+                    onPressed: () {
+                      _navigateAndDisplaySelection(context, false);
+                    },
+                  ),
+                  IconButton(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    icon: CircleAvatar(
+                      backgroundImage:
+                          AssetImage('assets/images/kocaeli_logo.jpg'),
                     ),
-                    actions: <Widget>[
-                      IconButton(
-                        icon: Icon(Icons.search,
-                            color: Theme.of(context).accentColor),
-                        onPressed: () {_navigateAndDisplaySelection(context, false);},
-                      ),
-                      IconButton(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        icon: CircleAvatar(
-                          backgroundImage:
-                              AssetImage('assets/images/kocaeli_logo.jpg'),
-                        ),
-                        onPressed: () {},
-                      ),
-                    ])),
-            showCircularProgress(),
-            showGetDirectionsButton(),
+                    onPressed: () {},
+                  ),
+                ])),
+        showCircularProgress(),
+        showGetDirectionsButton(),
+      ]),
+      // body: Stack(
+      //   children: <Widget>[
+      //     GoogleMap(
+      //       onMapCreated: _onMapCreated,
+      //       initialCameraPosition: CameraPosition(target: _center, zoom: 15),
+      //       markers: _markers.values.toSet(),
+      //       polylines: Set<Polyline>.of(polylines.values),
+      //       myLocationEnabled: true,
+      //       myLocationButtonEnabled: true,
+      //       padding: EdgeInsets.only(
+      //         top: _destinationSet ? 170 : 100.0,
+      //       ),
+      //       mapType: MapType.normal,
+      //     ),
+      //     showOriginTextField(),
+      //     Positioned(
+      //         // To take AppBar Size only
+      //         top: _destinationSet ? 115.0 : 50.0,
+      //         left: 20.0,
+      //         right: 20.0,
+      //         child: AppBar(
+      //             backgroundColor: Colors.white,
+      //             primary: false,
+      //             title: TextField(
+      //               readOnly: true,
+      //               controller: _destinationController,
+      //               decoration: InputDecoration(
+      //                   hintText: "Search your destination...",
+      //                   border: InputBorder.none,
+      //                   hintStyle: TextStyle(color: Colors.grey)),
+      //               onTap: () {
+      //                 _navigateAndDisplaySelection(context, false);
+      //               },
+      //             ),
+      //             actions: <Widget>[
+      //               IconButton(
+      //                 icon: Icon(Icons.search,
+      //                     color: Theme.of(context).accentColor),
+      //                 onPressed: () {_navigateAndDisplaySelection(context, false);},
+      //               ),
+      //               IconButton(
+      //                 padding: const EdgeInsets.only(right: 8.0),
+      //                 icon: CircleAvatar(
+      //                   backgroundImage:
+      //                       AssetImage('assets/images/kocaeli_logo.jpg'),
+      //                 ),
+      //                 onPressed: () {},
+      //               ),
+      //             ])),
+      //     showCircularProgress(),
+      //     showGetDirectionsButton(),
+      //   ],
+      // )
+    );
+  }
+
+  Widget _panel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          height: 12.0,
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              width: 30,
+              height: 5,
+              decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.all(Radius.circular(12.0))),
+            ),
           ],
-        ));
+        ),
+        SizedBox(
+          height: 18.0,
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              "Explore Pittsburgh",
+              style: TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 24.0,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(
+          height: 36.0,
+        ),
+        SizedBox(
+          height: 36.0,
+        ),
+        Container(
+          padding: const EdgeInsets.only(left: 24.0, right: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text("Images",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  )),
+              SizedBox(
+                height: 12.0,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 36.0,
+        ),
+        Container(
+          padding: const EdgeInsets.only(left: 24.0, right: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text("About",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  )),
+              SizedBox(
+                height: 12.0,
+              ),
+              Text(
+                "Pittsburgh is a city in the Commonwealth of Pennsylvania "
+                "in the United States, and is the county seat of Allegheny County. "
+                "As of 2017, a population of 305,704 lives within the city limits, "
+                "making it the 63rd-largest city in the U.S. The metropolitan population "
+                "of 2,353,045 is the largest in both the Ohio Valley and Appalachia, "
+                "the second-largest in Pennsylvania (behind Philadelphia), "
+                "and the 26th-largest in the U.S.  Pittsburgh is located in the "
+                "south west of the state, at the confluence of the Allegheny, "
+                "Monongahela, and Ohio rivers, Pittsburgh is known both as 'the Steel City' "
+                "for its more than 300 steel-related businesses and as the 'City of Bridges' "
+                "for its 446 bridges. The city features 30 skyscrapers, two inclined railways, "
+                "a pre-revolutionary fortification and the Point State Park at the "
+                "confluence of the rivers. The city developed as a vital link of "
+                "the Atlantic coast and Midwest, as the mineral-rich Allegheny "
+                "Mountains made the area coveted by the French and British "
+                "empires, Virginians, Whiskey Rebels, and Civil War raiders. ",
+                maxLines: 7,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget showOriginTextField() {
@@ -201,7 +377,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 IconButton(
                   icon:
                       Icon(Icons.search, color: Theme.of(context).accentColor),
-                  onPressed: () {_navigateAndDisplaySelection(context, true);},
+                  onPressed: () {
+                    _navigateAndDisplaySelection(context, true);
+                  },
                 ),
                 IconButton(
                   padding: const EdgeInsets.only(right: 8.0),
@@ -297,7 +475,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       origin ? _markers["Origin"] = m : _markers["Destination"] = m;
 
       //Add origin marker when destination is being set
-      if (!origin && result["currentPosition"] != null && _markers["Origin"] == null) {
+      if (!origin &&
+          result["currentPosition"] != null &&
+          _markers["Origin"] == null) {
         Placemark origin = result["currentPosition"];
         final m = Marker(
             markerId: MarkerId(origin.position.latitude.toString() +
@@ -320,6 +500,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
 
       setState(() {
+        // _panelController.show();
         origin ? _originSet = true : _destinationSet = true;
         String originAddress = _originSet
             ? selectedAddress.result.formattedAddress
@@ -358,25 +539,27 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     var url =
         'https://us-central1-wheelchair-router.cloudfunctions.net/getDirections$params';
 
-    List<dynamic> polylinesJSON;
+    List<dynamic> routesJSON;
     try {
       Response response = await Dio().get(url);
       if (response.statusCode == 200) {
-        polylinesJSON = jsonDecode(response.data);
+        routesJSON = jsonDecode(response.data);
 
         int index = -1;
-        if (polylinesJSON.isNotEmpty) {
-          List<PolylineJSON> lines =
-              polylinesJSON.map((i) => PolylineJSON.fromJson(i)).toList();
+        if (routesJSON.isNotEmpty) {
+          List<RoutesJSON> lines =
+              routesJSON.map((i) => RoutesJSON.fromJson(i)).toList();
 
-          lines.forEach((PolylineJSON point) {
-            index++;
-            List<LatLng> polylineCoordinates = [];
-            polylineCoordinates
-                .add(LatLng(point.origin.latitude, point.origin.longitude));
-            polylineCoordinates.add(LatLng(
-                point.destination.latitude, point.destination.longitude));
-            _addPolyLine(index, polylineCoordinates, point.slope, point.routeIndex);
+          lines.forEach((RoutesJSON route) {
+            route.polylineJSON.forEach((PolylineJSON point) {
+              index++;
+              List<LatLng> polylineCoordinates = [];
+              polylineCoordinates
+                  .add(LatLng(point.origin.latitude, point.origin.longitude));
+              polylineCoordinates.add(LatLng(
+                  point.destination.latitude, point.destination.longitude));
+              _addPolyLine(index, polylineCoordinates, point.slope, route);
+            });
           });
         }
       }
@@ -392,9 +575,11 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     setState(() {
       _isLoading = false;
     });
+    //_panelController.show();
   }
 
-  _addPolyLine(int index, List<LatLng> polylineCoordinates, double slope, int routeIndex) {
+  _addPolyLine(int index, List<LatLng> polylineCoordinates, double slope,
+      RoutesJSON route) {
     MaterialColor slopeColor;
     if (slope > 7)
       slopeColor = Colors.red;
@@ -409,17 +594,40 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     ];
     PolylineId id = PolylineId("poly" + index.toString());
     Polyline polyline = Polyline(
-      polylineId: id,
-      color: slopeColor,
-      points: polylineCoordinates,
-      width: 2,
-      geodesic: true,
-      startCap: Cap.buttCap,
-      endCap: Cap.roundCap,
-      patterns: patterns[routeIndex]
-    );
+        polylineId: id,
+        color: slopeColor,
+        points: polylineCoordinates,
+        width: 2,
+        geodesic: true,
+        startCap: Cap.buttCap,
+        endCap: Cap.roundCap,
+        patterns: patterns[route.routeIndex % 2],
+        consumeTapEvents: true,
+        onTap: () {
+          print('Distance is ' + route.routeTotalDistance);
+        });
     polylines[id] = polyline;
     setState(() {});
+  }
+}
+
+class RoutesJSON {
+  final int routeIndex;
+  final String routeTotalDistance;
+  //final double routeHighestSlope;
+  final List<PolylineJSON> polylineJSON;
+
+  RoutesJSON({this.routeIndex, this.routeTotalDistance, this.polylineJSON});
+
+  factory RoutesJSON.fromJson(Map<String, dynamic> json) {
+    var list = json['slopeOfRoute'] as List;
+    return new RoutesJSON(
+      routeIndex: json['routeIndex'],
+      routeTotalDistance: json['routeTotalDistance'],
+      polylineJSON: list
+          .map((i) => PolylineJSON.fromJson(i))
+          .toList(), //new List<PolylineJSON>.from(json['slopeOfRoute']),
+    );
   }
 }
 
@@ -439,7 +647,7 @@ class PolylineJSON {
 
   factory PolylineJSON.fromJson(Map<String, dynamic> json) {
     return new PolylineJSON(
-      slope: json['slope'],
+      slope: json['slope'] as double,
       origin: LocationJSON.fromJson(json['loc1']),
       destination: LocationJSON.fromJson(json['loc2']),
       routeIndex: json['pathIndex'],

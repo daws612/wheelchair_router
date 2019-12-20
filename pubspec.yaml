@@ -33,6 +33,7 @@ dependencies:
   flutter_polyline_points: ^0.1.0
   cloud_functions: ^0.4.1+6
   http: ^0.12.0+2
+  sliding_up_panel: ^0.3.6
 
 dev_dependencies:
   flutter_test:
@@ -55,7 +56,7 @@ flutter:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/images/kocaeli_logo.jpg"
+  image_path: "assets/images/icon2.png"
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -75,9 +75,13 @@ async function calculateSlope(req, response) {
                         return reject(err);
                     }
                     receivedPath++;
+                    if(slope === 0)
+                        slope = 1;
+                    if(slope === parseInt(slope, 10))
+                        slope = Number((slope / 100).toFixed(2));
                     slopes.push({ loc1, loc2, slope, pathIndex })
                     if (receivedPath >= totalPoints) {
-                        resolve(slopes);
+                        resolve(createResponse(response.json.routes,slopes));
                     }
                 });
 
@@ -87,6 +91,26 @@ async function calculateSlope(req, response) {
 
 }
 
+function createResponse(routes,slopes) {
+    var response=[];
+    for(var routeIndex=0; routeIndex<routes.length; routeIndex++) {
+        var route = routes[routeIndex];
+        var slopeOfRoute = [];
+        for(var i=0; i<slopes.length; i++) {
+            if(slopes[i].pathIndex === routeIndex) {
+                slopeOfRoute.push(slopes[i]);
+            }
+        }
+        var routeTotalDistance = 0;
+        for(var j=0; j<route.legs.length; j++) {
+            routeTotalDistance = route.legs[j].distance.value + routeTotalDistance;
+        }
+        routeTotalDistance = (routeTotalDistance/1000).toString()+" km";
+        response.push({routeIndex, routeTotalDistance, slopeOfRoute});
+    }
+    return response;
+
+}
 
 function displayLocationElevation(location1, location2, index, pathIndex, callback) {
     googleMapsClient.elevationAlongPath({
