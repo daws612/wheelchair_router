@@ -70,7 +70,7 @@ async function calculateSlope(req, response) {
             path = decode(points);
             for (var p = 0; p < path.length - 1; p++) {
                 //get slope between these two points.
-                displayLocationElevation(path[p], path[p + 1], p, j, function (err, slope, loc1, loc2, pathIndex) {
+                displayLocationElevation(path[p], path[p + 1], p, j, function (err, slope, loc1, loc2, pathIndex, routeIndex, elv1, elv2) {
                     if(err){
                         return reject(err);
                     }
@@ -79,7 +79,7 @@ async function calculateSlope(req, response) {
                         slope = 1;
                     if(slope === parseInt(slope, 10))
                         slope = Number((slope / 100).toFixed(2));
-                    slopes.push({ loc1, loc2, slope, pathIndex })
+                    slopes.push({ loc1, loc2, slope, pathIndex, routeIndex, elv1, elv2 })
                     if (receivedPath >= totalPoints) {
                         resolve(createResponse(response.json.routes,slopes));
                     }
@@ -96,15 +96,16 @@ function createResponse(routes,slopes) {
     for(var routeIndex=0; routeIndex<routes.length; routeIndex++) {
         var route = routes[routeIndex];
         var slopeOfRoute = [];
-        for(var i=0; i<slopes.length; i++) {
-            if(slopes[i].pathIndex === routeIndex) {
-                slopeOfRoute.push(slopes[i]);
+        for(var slopeIndex=0; slopeIndex<slopes.length; slopeIndex++) {
+            if(slopes[slopeIndex].routeIndex === routeIndex) {
+                slopeOfRoute.push(slopes[slopeIndex]);
             }
         }
         var routeTotalDistance = 0;
         for(var j=0; j<route.legs.length; j++) {
             routeTotalDistance = route.legs[j].distance.value + routeTotalDistance;
         }
+        slopeOfRoute.sort((a, b) => (a.pathIndex > b.pathIndex) ? 1 : -1)
         routeTotalDistance = (routeTotalDistance/1000).toString()+" km";
         response.push({routeIndex, routeTotalDistance, slopeOfRoute});
     }
@@ -112,7 +113,7 @@ function createResponse(routes,slopes) {
 
 }
 
-function displayLocationElevation(location1, location2, index, pathIndex, callback) {
+function displayLocationElevation(location1, location2, pathIndex, routeIndex, callback) {
     googleMapsClient.elevationAlongPath({
         samples: 2,
         path: [location1, location2/*{ lat: location1.latitude, lng: location1.longitude }, 
@@ -129,7 +130,7 @@ function displayLocationElevation(location1, location2, index, pathIndex, callba
                 var rise = elevationResponse.json.results[1].elevation - elevationResponse.json.results[0].elevation; // if negative, down slope
                 var slope = (rise / run) * 100.0;
                 console.log(slope);
-                callback(err, slope, location1, location2, pathIndex);
+                callback(err, slope, location1, location2, pathIndex, routeIndex, elevationResponse.json.results[0].elevation, elevationResponse.json.results[1].elevation);
                 return true;
                 //req.send(JSON.stringify(elevationResponse));
             }

@@ -47,14 +47,16 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
 
   void getLocationResults(String input) async {
     if (input.isNotEmpty) {
-      setState(() {
-        isLoading = true;
-      });
+      if (mounted)
+        setState(() {
+          isLoading = true;
+        });
     } else {
-      setState(() {
-        _placesList = [];
-        return;
-      });
+      if (mounted)
+        setState(() {
+          _placesList = [];
+          return;
+        });
     }
 
     PlacesAutocompleteResponse result =

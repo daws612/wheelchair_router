@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:routing/models/RoutesJSON.dart';
+import 'package:routing/screens/PathDetails.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
@@ -35,12 +37,13 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final _destinationController = TextEditingController();
 
   Map<PolylineId, Polyline> polylines = {};
+  List<RoutesJSON> routes = [];
 
   String _progressText = 'Loading';
 
   final double _initFabHeight = 120.0;
   double _fabHeight;
-  double _panelHeightOpen = 575.0;
+  double _panelHeightOpen = 375.0;
   double _panelHeightClosed = 95.0;
   PanelController _panelController = new PanelController();
 
@@ -134,6 +137,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       key: _scaffoldKey,
       body: Stack(alignment: Alignment.topCenter, children: <Widget>[
         SlidingUpPanel(
+          //color: Theme.of(context).primaryColor.withOpacity(0.5),
           controller: _panelController,
           maxHeight: _panelHeightOpen,
           minHeight: _panelHeightClosed,
@@ -256,100 +260,26 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget _panel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          height: 12.0,
+    if (routes.isNotEmpty) {
+      return Container(
+        //adding a margin to the top leaves an area where the user can swipe
+        //to open/close the sliding panel
+        margin: const EdgeInsets.only(top: 36.0),
+
+        child: ListView.builder(
+          padding: const EdgeInsets.only(top: 0.0),
+          itemCount: routes.length,
+          itemBuilder: (BuildContext context, int i) {
+            return PathDetails(
+              route: routes[i],
+            );
+          },
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Container(
-              width: 30,
-              height: 5,
-              decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.all(Radius.circular(12.0))),
-            ),
-          ],
-        ),
-        SizedBox(
-          height: 18.0,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              "Explore Pittsburgh",
-              style: TextStyle(
-                fontWeight: FontWeight.normal,
-                fontSize: 24.0,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(
-          height: 36.0,
-        ),
-        SizedBox(
-          height: 36.0,
-        ),
-        Container(
-          padding: const EdgeInsets.only(left: 24.0, right: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text("Images",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                  )),
-              SizedBox(
-                height: 12.0,
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 36.0,
-        ),
-        Container(
-          padding: const EdgeInsets.only(left: 24.0, right: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text("About",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                  )),
-              SizedBox(
-                height: 12.0,
-              ),
-              Text(
-                "Pittsburgh is a city in the Commonwealth of Pennsylvania "
-                "in the United States, and is the county seat of Allegheny County. "
-                "As of 2017, a population of 305,704 lives within the city limits, "
-                "making it the 63rd-largest city in the U.S. The metropolitan population "
-                "of 2,353,045 is the largest in both the Ohio Valley and Appalachia, "
-                "the second-largest in Pennsylvania (behind Philadelphia), "
-                "and the 26th-largest in the U.S.  Pittsburgh is located in the "
-                "south west of the state, at the confluence of the Allegheny, "
-                "Monongahela, and Ohio rivers, Pittsburgh is known both as 'the Steel City' "
-                "for its more than 300 steel-related businesses and as the 'City of Bridges' "
-                "for its 446 bridges. The city features 30 skyscrapers, two inclined railways, "
-                "a pre-revolutionary fortification and the Point State Park at the "
-                "confluence of the rivers. The city developed as a vital link of "
-                "the Atlantic coast and Midwest, as the mineral-rich Allegheny "
-                "Mountains made the area coveted by the French and British "
-                "empires, Virginians, Whiskey Rebels, and Civil War raiders. ",
-                maxLines: 7,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+      );
+    } else {
+      //_panelController.hide();
+      return Container();
+    }
   }
 
   Widget showOriginTextField() {
@@ -500,7 +430,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
 
       setState(() {
-        // _panelController.show();
         origin ? _originSet = true : _destinationSet = true;
         String originAddress = _originSet
             ? selectedAddress.result.formattedAddress
@@ -547,10 +476,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
         int index = -1;
         if (routesJSON.isNotEmpty) {
-          List<RoutesJSON> lines =
-              routesJSON.map((i) => RoutesJSON.fromJson(i)).toList();
+          routes = routesJSON.map((i) => RoutesJSON.fromJson(i)).toList();
 
-          lines.forEach((RoutesJSON route) {
+          routes.forEach((RoutesJSON route) {
             route.polylineJSON.forEach((PolylineJSON point) {
               index++;
               List<LatLng> polylineCoordinates = [];
@@ -575,7 +503,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     setState(() {
       _isLoading = false;
     });
-    //_panelController.show();
+    if(routes.isNotEmpty)
+      _panelController.show();
   }
 
   _addPolyLine(int index, List<LatLng> polylineCoordinates, double slope,
@@ -608,63 +537,5 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         });
     polylines[id] = polyline;
     setState(() {});
-  }
-}
-
-class RoutesJSON {
-  final int routeIndex;
-  final String routeTotalDistance;
-  //final double routeHighestSlope;
-  final List<PolylineJSON> polylineJSON;
-
-  RoutesJSON({this.routeIndex, this.routeTotalDistance, this.polylineJSON});
-
-  factory RoutesJSON.fromJson(Map<String, dynamic> json) {
-    var list = json['slopeOfRoute'] as List;
-    return new RoutesJSON(
-      routeIndex: json['routeIndex'],
-      routeTotalDistance: json['routeTotalDistance'],
-      polylineJSON: list
-          .map((i) => PolylineJSON.fromJson(i))
-          .toList(), //new List<PolylineJSON>.from(json['slopeOfRoute']),
-    );
-  }
-}
-
-//Model to get data from firebase cloud function
-class PolylineJSON {
-  final double slope;
-  final LocationJSON origin;
-  final LocationJSON destination;
-  final int routeIndex;
-
-  PolylineJSON({
-    this.slope,
-    this.origin,
-    this.destination,
-    this.routeIndex,
-  });
-
-  factory PolylineJSON.fromJson(Map<String, dynamic> json) {
-    return new PolylineJSON(
-      slope: json['slope'] as double,
-      origin: LocationJSON.fromJson(json['loc1']),
-      destination: LocationJSON.fromJson(json['loc2']),
-      routeIndex: json['pathIndex'],
-    );
-  }
-}
-
-class LocationJSON {
-  double latitude;
-  double longitude;
-
-  LocationJSON({this.latitude, this.longitude});
-
-  factory LocationJSON.fromJson(Map<String, dynamic> json) {
-    return new LocationJSON(
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-    );
   }
 }
