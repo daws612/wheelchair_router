@@ -209,27 +209,58 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Widget _panel() {
     if (routes.isNotEmpty) {
-      return Container(
-        //adding a margin to the top leaves an area where the user can swipe
-        //to open/close the sliding panel
-        margin: const EdgeInsets.only(top: 48.0),
-
-        child: ListView.builder(
-          padding: const EdgeInsets.only(top: 0.0),
-          itemCount: routes.length,
-          itemBuilder: (BuildContext context, int i) {
-            return PathDetails(
-              route: routes[i],
-              index: i,
-              radioValue: selectedRoute,
-              onClicked: () {
-                selectedRoute = i;
-                _renderPolylines(routes);
-                setState(() {});
-              },
-            );
-          },
-        ),
+      return Column(
+        children: <Widget>[
+          SizedBox(
+            height: 12.0,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Container(
+                width: 50,
+                height: 5,
+                decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.all(Radius.circular(12.0))),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 18.0,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(
+                "Route Details",
+                style: TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 24.0,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 36.0,
+          ),
+          Expanded(
+            child: ListView.builder(
+                itemCount: routes.length, // records.length
+                itemBuilder: (BuildContext context, int i) {
+                  return PathDetails(
+                    route: routes[i],
+                    index: i,
+                    radioValue: selectedRoute,
+                    onClicked: () {
+                      selectedRoute = i;
+                      _renderPolylines(routes);
+                      setState(() {});
+                    },
+                  );
+                }),
+          ),
+        ],
       );
     } else {
       //_panelController.hide();
@@ -306,7 +337,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget showGetDirectionsButton() {
-    if (_destinationSet) {
+    if (routes.isEmpty && _destinationSet) {
       return new Stack(
         children: [
           Align(
@@ -385,6 +416,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
 
       setState(() {
+        _resetMap();
         origin ? _originSet = true : _destinationSet = true;
         String originAddress = _originSet
             ? selectedAddress.result.formattedAddress
@@ -394,6 +426,13 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           _destinationController.text = selectedAddress.result.formattedAddress;
       });
     }
+  }
+
+  _resetMap() {
+    routes.clear();
+    polylines.clear();
+    if (_panelController.isPanelShown()) _panelController.hide();
+    selectedRoute = 0;
   }
 
   _getFirebaseDirections() async {
@@ -483,7 +522,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     PolylineId id = PolylineId("poly" + index.toString());
     Polyline polyline = Polyline(
         polylineId: id,
-        color: route.routeIndex == selectedRoute ? slopeColor : slopeColor.withOpacity(0.3),
+        color: route.routeIndex == selectedRoute
+            ? slopeColor
+            : slopeColor.withOpacity(0.3),
         points: polylineCoordinates,
         width: 2,
         geodesic: true,

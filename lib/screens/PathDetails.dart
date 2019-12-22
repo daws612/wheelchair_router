@@ -79,6 +79,9 @@ class PathDetails extends StatelessWidget {
                                           animate: true,
                                           animationDuration:
                                               Duration(seconds: 2),
+                                          behaviors: <ChartBehavior> [
+                                            
+                                          ],
                                         )),
                                   ],
                                 )),
