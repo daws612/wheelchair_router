@@ -38,6 +38,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Map<PolylineId, Polyline> polylines = {};
   List<RoutesJSON> routes = [];
+  int selectedRoute = 0;
 
   String _progressText = 'Loading';
 
@@ -203,59 +204,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         showCircularProgress(),
         showGetDirectionsButton(),
       ]),
-      // body: Stack(
-      //   children: <Widget>[
-      //     GoogleMap(
-      //       onMapCreated: _onMapCreated,
-      //       initialCameraPosition: CameraPosition(target: _center, zoom: 15),
-      //       markers: _markers.values.toSet(),
-      //       polylines: Set<Polyline>.of(polylines.values),
-      //       myLocationEnabled: true,
-      //       myLocationButtonEnabled: true,
-      //       padding: EdgeInsets.only(
-      //         top: _destinationSet ? 170 : 100.0,
-      //       ),
-      //       mapType: MapType.normal,
-      //     ),
-      //     showOriginTextField(),
-      //     Positioned(
-      //         // To take AppBar Size only
-      //         top: _destinationSet ? 115.0 : 50.0,
-      //         left: 20.0,
-      //         right: 20.0,
-      //         child: AppBar(
-      //             backgroundColor: Colors.white,
-      //             primary: false,
-      //             title: TextField(
-      //               readOnly: true,
-      //               controller: _destinationController,
-      //               decoration: InputDecoration(
-      //                   hintText: "Search your destination...",
-      //                   border: InputBorder.none,
-      //                   hintStyle: TextStyle(color: Colors.grey)),
-      //               onTap: () {
-      //                 _navigateAndDisplaySelection(context, false);
-      //               },
-      //             ),
-      //             actions: <Widget>[
-      //               IconButton(
-      //                 icon: Icon(Icons.search,
-      //                     color: Theme.of(context).accentColor),
-      //                 onPressed: () {_navigateAndDisplaySelection(context, false);},
-      //               ),
-      //               IconButton(
-      //                 padding: const EdgeInsets.only(right: 8.0),
-      //                 icon: CircleAvatar(
-      //                   backgroundImage:
-      //                       AssetImage('assets/images/kocaeli_logo.jpg'),
-      //                 ),
-      //                 onPressed: () {},
-      //               ),
-      //             ])),
-      //     showCircularProgress(),
-      //     showGetDirectionsButton(),
-      //   ],
-      // )
     );
   }
 
@@ -264,7 +212,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       return Container(
         //adding a margin to the top leaves an area where the user can swipe
         //to open/close the sliding panel
-        margin: const EdgeInsets.only(top: 36.0),
+        margin: const EdgeInsets.only(top: 48.0),
 
         child: ListView.builder(
           padding: const EdgeInsets.only(top: 0.0),
@@ -272,6 +220,13 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           itemBuilder: (BuildContext context, int i) {
             return PathDetails(
               route: routes[i],
+              index: i,
+              radioValue: selectedRoute,
+              onClicked: () {
+                selectedRoute = i;
+                _renderPolylines(routes);
+                setState(() {});
+              },
             );
           },
         ),
@@ -474,21 +429,10 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (response.statusCode == 200) {
         routesJSON = jsonDecode(response.data);
 
-        int index = -1;
         if (routesJSON.isNotEmpty) {
           routes = routesJSON.map((i) => RoutesJSON.fromJson(i)).toList();
 
-          routes.forEach((RoutesJSON route) {
-            route.polylineJSON.forEach((PolylineJSON point) {
-              index++;
-              List<LatLng> polylineCoordinates = [];
-              polylineCoordinates
-                  .add(LatLng(point.origin.latitude, point.origin.longitude));
-              polylineCoordinates.add(LatLng(
-                  point.destination.latitude, point.destination.longitude));
-              _addPolyLine(index, polylineCoordinates, point.slope, route);
-            });
-          });
+          _renderPolylines(routes);
         }
       }
     } catch (exception) {
@@ -503,8 +447,23 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     setState(() {
       _isLoading = false;
     });
-    if(routes.isNotEmpty)
-      _panelController.show();
+    if (routes.isNotEmpty) _panelController.show();
+  }
+
+  _renderPolylines(List<RoutesJSON> routes) {
+    polylines.clear();
+    int index = -1;
+    routes.forEach((RoutesJSON route) {
+      route.polylineJSON.forEach((PolylineJSON point) {
+        index++;
+        List<LatLng> polylineCoordinates = [];
+        polylineCoordinates
+            .add(LatLng(point.origin.latitude, point.origin.longitude));
+        polylineCoordinates.add(
+            LatLng(point.destination.latitude, point.destination.longitude));
+        _addPolyLine(index, polylineCoordinates, point.slope, route);
+      });
+    });
   }
 
   _addPolyLine(int index, List<LatLng> polylineCoordinates, double slope,
@@ -524,13 +483,13 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     PolylineId id = PolylineId("poly" + index.toString());
     Polyline polyline = Polyline(
         polylineId: id,
-        color: slopeColor,
+        color: route.routeIndex == selectedRoute ? slopeColor : slopeColor.withOpacity(0.3),
         points: polylineCoordinates,
         width: 2,
         geodesic: true,
         startCap: Cap.buttCap,
         endCap: Cap.roundCap,
-        patterns: patterns[route.routeIndex % 2],
+        //patterns: patterns[route.routeIndex % 2],
         consumeTapEvents: true,
         onTap: () {
           print('Distance is ' + route.routeTotalDistance);

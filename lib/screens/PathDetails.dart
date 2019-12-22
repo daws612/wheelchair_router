@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:routing/models/RoutesJSON.dart';
 
 class PathDetails extends StatelessWidget {
-  PathDetails({Key key, this.route}) : super(key: key);
+  PathDetails(
+      {Key key, this.route, this.index, this.radioValue, this.onClicked})
+      : super(key: key);
 
   final RoutesJSON route;
+  final int index;
+  final int radioValue;
+  final VoidCallback onClicked;
 
   @override
   Widget build(BuildContext context) {
-   
-
     List<Series<PolylineJSON, int>> data = [
       new Series<PolylineJSON, int>(
         id: 'Slope',
@@ -20,57 +23,66 @@ class PathDetails extends StatelessWidget {
         data: route.polylineJSON,
       )
     ];
-  
 
     return Card(
-        child: Padding(
-            padding: const EdgeInsets.all(0),
-            child: SizedBox(
-                height: 200,
-                
-                child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      CircleAvatar(
-                        backgroundColor: Colors.transparent,
-                        backgroundImage:
-                            AssetImage('assets/images/icons8-walking-50.png'),
-                      ),
-                      Expanded(
-                        child: Padding(
-                            padding:
-                                const EdgeInsets.fromLTRB(20.0, 0.0, 2.0, 0.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+        child: InkWell(
+            onTap: () => onClicked(),
+            child: Padding(
+                padding: const EdgeInsets.all(0),
+                child: SizedBox(
+                    height: 200,
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: <Widget>[
-                                Expanded(
-                                  flex: 1,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      Text(
-                                        "Route Distance: " +
-                                            route.routeTotalDistance,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        
+                                CircleAvatar(
+                                  backgroundColor: Colors.transparent,
+                                  backgroundImage: AssetImage(
+                                      'assets/images/wheelchair_accessible.jpg'),
+                                ),
+                                new Radio(
+                                  value: index,
+                                  groupValue: radioValue,
+                                  onChanged: (value) {
+                                    onClicked();
+                                  },
+                                ),
+                              ]),
+                          Expanded(
+                            child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                    20.0, 0.0, 2.0, 0.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Expanded(
+                                      flex: 1,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Text(
+                                            "Route Distance: " +
+                                                route.routeTotalDistance,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 10,
-                                  child: LineChart(
-                                    data, 
-                                    animate: true, 
-                                    animationDuration: Duration(seconds: 2),
-                                    
-                                  )
-                                ),
-                              ],
-                            )),
-                      )
-                    ]))));
+                                    ),
+                                    Expanded(
+                                        flex: 10,
+                                        child: LineChart(
+                                          data,
+                                          animate: true,
+                                          animationDuration:
+                                              Duration(seconds: 2),
+                                        )),
+                                  ],
+                                )),
+                          )
+                        ])))));
   }
 }
