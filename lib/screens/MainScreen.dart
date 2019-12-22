@@ -230,13 +230,38 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             height: 18.0,
           ),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            //mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text(
-                "Route Details",
-                style: TextStyle(
-                  fontWeight: FontWeight.normal,
-                  fontSize: 24.0,
+              Expanded(
+                flex: 9,
+                child: Text(
+                  "Route Details",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.normal,
+                    fontSize: 24.0,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: GestureDetector(
+                  onTap: () async{
+                    final ConfirmAction action = await _asyncConfirmDialog(context);
+                    if(action == ConfirmAction.ACCEPT)
+                      _closeRouting();
+                  },
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: CircleAvatar(
+                      radius: 14.0,
+                      backgroundColor: Theme.of(context).primaryColor,
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -428,6 +453,19 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
+  _closeRouting() {
+    _destinationSet = false;
+    _originSet = false;
+    _destinationController.clear();
+    _originController.clear();
+    _markers.clear();
+    routes.clear();
+    polylines.clear();
+    if (_panelController.isPanelShown()) _panelController.hide();
+    selectedRoute = 0;
+    setState(() {});
+  }
+
   _resetMap() {
     routes.clear();
     polylines.clear();
@@ -538,4 +576,34 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     polylines[id] = polyline;
     setState(() {});
   }
+
+  Future<ConfirmAction> _asyncConfirmDialog(BuildContext context) async {
+    return showDialog<ConfirmAction>(
+      context: context,
+      barrierDismissible: false, // user must tap button for close dialog!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Reset Map?'),
+          content: const Text(
+              'This will remove the displayed routes and their details.'),
+          actions: <Widget>[
+            FlatButton(
+              child: const Text('CANCEL'),
+              onPressed: () {
+                Navigator.of(context).pop(ConfirmAction.CANCEL);
+              },
+            ),
+            FlatButton(
+              child: const Text('ACCEPT'),
+              onPressed: () {
+                Navigator.of(context).pop(ConfirmAction.ACCEPT);
+              },
+            )
+          ],
+        );
+      },
+    );
+  }
 }
+
+enum ConfirmAction { CANCEL, ACCEPT }
