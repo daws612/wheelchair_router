@@ -191,61 +191,6 @@ function decode(encoded) {
     return points
 }
 
-// exports.documentWriteListener =
-//     functions.firestore.document('stops/{documentUid}')
-//         .onWrite((change, context) => {
-//             const statsRef = db.collection('stops').doc('--stats--');
-//             var increment = 0;
-
-//             if (!change.before.exists) {
-//                 // New document Created : add one to count
-
-//                 increment = 1;
-
-//             } else if (change.before.exists && change.after.exists) {
-//                 // Updating existing document : Do nothing
-
-//             } else if (!change.after.exists) {
-//                 // Deleting document : subtract one from count
-
-//                 increment = -1;
-
-//             }
-
-//             // return db.runTransaction(transaction => {
-//             //     return transaction.get(statsRef)
-//             //     .then((docSnapshot) => {
-//             //         if (docSnapshot.exists) {
-//             //             transaction.update(statsRef, { numberOfDocs: FieldValue.increment(increment) });
-//             //         } else {
-//             //             transaction.set(statsRef, { numberOfDocs: increment }) // create the document
-//             //         }
-//             //         return docSnapshot;
-//             //     }).catch((err) => {
-//             //         throw err;
-//             //     });
-//             //     // return transaction.get(likesRef).then(likesQuery => {
-//             //     //   const likesCount = likesQuery.size;
-
-//             //     //   return transaction.update(holeRef, {
-//             //     //     likesCount: likesCount
-//             //     //   });
-//             //     // });
-//             //   });
-
-//             return statsRef.get()
-//                 .then((docSnapshot) => {
-//                     if (docSnapshot.exists) {
-//                         statsRef.update({ numberOfDocs: FieldValue.increment(increment) });
-//                     } else {
-//                         statsRef.set({ numberOfDocs: increment }) // create the document
-//                     }
-//                     return docSnapshot;
-//                 }).catch((err) => {
-//                     throw err;
-//                 });
-//         });
-
 const firestore = admin.firestore();
 const executeOnce = (change, context, task) => {
     const eventRef = firestore.collection('events').doc(context.eventId);
