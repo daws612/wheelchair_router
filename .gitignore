@@ -75,3 +75,5 @@
 pubspec.lock
 .vscode/*
 .directory
+node_functions/serviceAccount.json
+node_functions/node_modules/*
