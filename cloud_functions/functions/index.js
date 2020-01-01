@@ -239,8 +239,34 @@ const documentCounter = collectionName => (change, context) =>
     });
 
 /**
- * Count documents in customers collection.
+ * Count documents in collections.
  */
+
+exports.agencyCounter = functions.firestore
+    .document('agency/{id}')
+    .onWrite(documentCounter('agency'));
+
+exports.calendarCounter = functions.firestore
+    .document('calendar/{id}')
+    .onWrite(documentCounter('calendar'));
+
+
+exports.routesCounter = functions.firestore
+    .document('routes/{id}')
+    .onWrite(documentCounter('routes'));
+
+exports.shapesCounter = functions.firestore
+    .document('shapes/{id}')
+    .onWrite(documentCounter('shapes'));
+
 exports.stopsCounter = functions.firestore
     .document('stops/{stop_id}')
     .onWrite(documentCounter('stops'));
+
+exports.stopTimesCounter = functions.firestore
+    .document('stop_times/{id}')
+    .onWrite(documentCounter('stop_times'));
+
+exports.tripsCounter = functions.firestore
+    .document('trips/{id}')
+    .onWrite(documentCounter('trips'));

@@ -77,3 +77,5 @@ pubspec.lock
 .directory
 node_functions/serviceAccount.json
 node_functions/node_modules/*
+node_functions/gtfs/*
+node_functions/config.js
