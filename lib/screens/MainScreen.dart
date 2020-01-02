@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -7,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:routing/models/RoutesJSON.dart';
 import 'package:routing/screens/PathDetails.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
+import 'package:routing/services/FirestoreService.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
@@ -614,7 +616,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   //Load stops for visible area
   void getStopsWithinArea(LatLngBounds visibleRegion) {
-
+    //https://stackoverflow.com/questions/56475991/firestore-query-geopoints-using-bounds-lessthan-morethan
+    FirestoreService().getNearbyStops(visibleRegion);
   }
 }
 
