@@ -132,6 +132,12 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _controller = controller;
   }
 
+  void _onCameraIdle() async{
+    LatLngBounds visibleRegion = await _controller.getVisibleRegion();
+    print("Camera Idle! VisibleRegion: " + visibleRegion.toString());
+    getStopsWithinArea(visibleRegion);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -146,6 +152,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           parallaxOffset: .5,
           body: GoogleMap(
             onMapCreated: _onMapCreated,
+            onCameraIdle: _onCameraIdle,
             initialCameraPosition: CameraPosition(target: _center, zoom: 15),
             markers: _markers.values.toSet(),
             polylines: Set<Polyline>.of(polylines.values),
@@ -603,6 +610,11 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         );
       },
     );
+  }
+
+  //Load stops for visible area
+  void getStopsWithinArea(LatLngBounds visibleRegion) {
+
   }
 }
 
