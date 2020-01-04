@@ -1,15 +1,14 @@
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:routing/models/RoutesJSON.dart';
+import 'package:routing/models/StopsJSON.dart';
 import 'package:routing/screens/PathDetails.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/services/DataService.dart';
-import 'package:routing/services/FirestoreService.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
@@ -135,7 +134,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _controller = controller;
   }
 
-  void _onCameraIdle() async{
+  void _onCameraIdle() async {
     LatLngBounds visibleRegion = await _controller.getVisibleRegion();
     print("Camera Idle! VisibleRegion: " + visibleRegion.toString());
     getStopsWithinArea(visibleRegion);
@@ -256,10 +255,10 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               Expanded(
                 flex: 1,
                 child: GestureDetector(
-                  onTap: () async{
-                    final ConfirmAction action = await _asyncConfirmDialog(context);
-                    if(action == ConfirmAction.ACCEPT)
-                      _closeRouting();
+                  onTap: () async {
+                    final ConfirmAction action =
+                        await _asyncConfirmDialog(context);
+                    if (action == ConfirmAction.ACCEPT) _closeRouting();
                   },
                   child: Align(
                     alignment: Alignment.centerLeft,
@@ -468,7 +467,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _originSet = false;
     _destinationController.clear();
     _originController.clear();
-    _markers.clear();
+    _markers.remove('Origin');
+    _markers.remove('Destination');
     routes.clear();
     polylines.clear();
     if (_panelController.isPanelShown()) _panelController.hide();
@@ -562,11 +562,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       slopeColor = Colors.green;
     else if (slope < -7) slopeColor = Colors.blue;
 
-    List<List<PatternItem>> patterns = [
-      [PatternItem.dot],
-      [PatternItem.dash(5)],
-      [PatternItem.gap(5)]
-    ];
     PolylineId id = PolylineId("poly" + index.toString());
     Polyline polyline = Polyline(
         polylineId: id,
@@ -616,11 +611,25 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   //Load stops for visible area
-  void getStopsWithinArea(LatLngBounds visibleRegion) {
+  void getStopsWithinArea(LatLngBounds visibleRegion) async {
     //https://stackoverflow.com/questions/56475991/firestore-query-geopoints-using-bounds-lessthan-morethan
     //https://stackoverflow.com/questions/4834772/get-all-records-from-mysql-database-that-are-within-google-maps-getbounds/20741219#20741219
     //FirestoreService().getNearbyStops(visibleRegion);
-    DataService().fetchData(visibleRegion);
+    List<StopsJSON> stops = await DataService().fetchData(visibleRegion);
+
+    if (stops.isNotEmpty) {
+      stops.forEach((StopsJSON stop) {
+        Marker m = Marker(
+            markerId: MarkerId(stop.stopId.toString()),
+            position: LatLng(stop.stopLatitude, stop.stopLongitude),
+            infoWindow: InfoWindow(
+                title: stop.stopCode.toString() + " - " + stop.stopName),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueYellow));
+        _markers[stop.stopId.toString()] = m;
+      });
+      setState(() {});
+    }
   }
 }
 

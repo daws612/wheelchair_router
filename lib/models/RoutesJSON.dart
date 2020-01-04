@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class RoutesJSON {
   final int routeIndex;
   final String routeTotalDistance;
