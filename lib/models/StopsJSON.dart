@@ -8,6 +8,8 @@ class StopsJSON {
   StopsJSON({this.stopId, this.stopCode, this.stopName, this.stopLatitude, this.stopLongitude});
 
   factory StopsJSON.fromJson(Map<String, dynamic> json) {
+    if(json == null)
+      return null;
     return new StopsJSON(
       stopId: json['stop_id'],
       stopCode: json['stop_code'],

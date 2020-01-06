@@ -80,3 +80,4 @@ node_functions/node_modules/*
 node_functions/gtfs/*
 node_functions/config.js
 android/app/google-services.json
+server_functions/connection.php

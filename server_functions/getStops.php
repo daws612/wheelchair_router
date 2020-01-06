@@ -37,9 +37,10 @@
         }
     
     } else {
-        echo "No Data Found.";
+        //echo "No Data Found.";
+        $json= json_encode([]);
     }
-    header('Content-Type: application/json');
+    //header('Content-Type: application/json');
     echo $json;
     $conn->close();
  ?>
