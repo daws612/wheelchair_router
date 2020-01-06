@@ -39,6 +39,7 @@
     } else {
         echo "No Data Found.";
     }
+    header('Content-Type: application/json');
     echo $json;
     $conn->close();
  ?>
