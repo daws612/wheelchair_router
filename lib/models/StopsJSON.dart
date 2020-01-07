@@ -14,8 +14,8 @@ class StopsJSON {
       stopId: json['stop_id'],
       stopCode: json['stop_code'],
       stopName: json['stop_name'],
-      stopLatitude: double.parse(json['stop_lat']),
-      stopLongitude: double.parse(json['stop_lon'])
+      stopLatitude: json['stop_lat'] is double ? json['stop_lat'] : double.parse(json['stop_lat']),
+      stopLongitude: json['stop_lon'] is double ? json['stop_lon'] :  double.parse(json['stop_lon'])
     );
   }
 }
