@@ -6,6 +6,7 @@
     $originlon = $_GET['originlon']; //b
     $destlat = $_GET['destlat']; //c
     $destlon = $_GET['destlon']; //d
+    $hidejson = $_GET['hidejson'];
     
     //get nearest stops to the origin and destination
     $sql_origin = "SELECT *, 'origin' as stoptype,
@@ -17,8 +18,8 @@
             WHERE ST_Distance_Sphere(
                 point($originlat, $originlon),
                 point(stop_lat, stop_lon)
-                ) < 200
-            ORDER BY `dist_m`";
+                ) < 1000
+            ORDER BY `dist_m` limit 0, 2";
             
     $sql_dest = "SELECT *, 'destination' as stoptype,
             ST_Distance_Sphere(
@@ -29,8 +30,8 @@
             WHERE ST_Distance_Sphere(
                 point($destlat, $destlon),
                 point(stop_lat, stop_lon)
-                ) < 200
-            ORDER BY `dist_m`";
+                ) < 1000
+            ORDER BY `dist_m` limit 0, 2";
  
     $result_origin = $conn->query($sql_origin);
     $result_dest = $conn->query($sql_dest);
@@ -66,7 +67,7 @@
                                 a.stop_id = $stop1
                                 and b.stop_id = $stop2
                                 and a.trip_id = b.trip_id
-                                and a.departure_time between '07:00' and TIME(DATE_ADD('2019-01-06 07:00', INTERVAL 15 MINUTE))
+                                and a.departure_time between current_time() and TIME(DATE_ADD(now(), INTERVAL 15 MINUTE))
                                 and t.service_id = (case 
                                 when dayofweek(current_date()) between 2 and 6 then 1
                                 when dayofweek(current_date()) = 1 then 3
@@ -82,7 +83,8 @@
                 //array_push($routerow, array('origin' => $stop1, 'destination' => $stop2));
                 if ($result_route->num_rows >0) {
                     $index = 0;
-                    while($routeinfo[] = $result_route->fetch_assoc()) {
+                    //$getRoute = true;
+                    while( $routeinfo[] = $result_route->fetch_assoc()) {
                         $tripId = $routeinfo[$index]['trip_id'];
                         //$sql_stops = "SELECT * FROM stops WHERE stop_id IN (SELECT DISTINCT stop_id FROM stop_times WHERE trip_id = $tripId ORDER BY stop_sequence asc);";
                         //The and clause is to get the stops in the route that are between origin and destination only
@@ -100,6 +102,7 @@
                         if ($result_stops->num_rows >0) {
                             while($tripStops[] = $result_stops->fetch_assoc()) {
                             }
+                           // $getRoute = false;
                         }
                         $routeinfo[$index]['stops'] = $tripStops;
                         //array_push($routerow, array('stops' => $tripStops));
@@ -116,7 +119,8 @@
         //echo "No Data Found.";
         $routeArray = [];
     }
-    //header('Content-Type: application/json');
+    if(!$hidejson)
+        header('Content-Type: application/json');
     echo json_encode($routeArray);
     $conn->close();
  ?>

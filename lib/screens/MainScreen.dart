@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -537,7 +538,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (!mounted) return;
 
     setState(() {
-      _isLoading = false;
+      //_isLoading = false;
     });
     if (routes.isNotEmpty) _panelController.show();
   }
@@ -620,10 +621,10 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     //https://stackoverflow.com/questions/56475991/firestore-query-geopoints-using-bounds-lessthan-morethan
     //https://stackoverflow.com/questions/4834772/get-all-records-from-mysql-database-that-are-within-google-maps-getbounds/20741219#20741219
     //FirestoreService().getNearbyStops(visibleRegion);
-    setState(() {
-      _isLoading = true;
-      _progressText = 'Updating map ... stops';
-    });
+    // setState(() {
+    //   _isLoading = true;
+    //   _progressText = 'Updating map ... stops';
+    // });
     List<StopsJSON> stops = await DataService().fetchData(visibleRegion);
 
     if (stops.isNotEmpty) {
@@ -638,58 +639,69 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         _markers[stop.stopId.toString()] = m;
       });
       setState(() {
-        _isLoading = false;
+        //_isLoading = false;
       });
     } else {
       setState(() {
-        _isLoading = false;
+        //_isLoading = false;
       });
     }
   }
 
-  void _getBusRoutes(LatLng origin, LatLng destination) async{
+  void _getBusRoutes(LatLng origin, LatLng destination) async {
     //https://stackoverflow.com/questions/13407468/how-can-i-list-all-the-stops-associated-with-a-route-using-gtfs
-    List<BusRoutes.BusRoutesJSON> busRoutes = await DataService().fetchRoutes(origin, destination);
+    List<BusRoutes.BusRoutesJSON> busRoutes =
+        await DataService().fetchRoutes(origin, destination);
     _controller.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
-          target: LatLng(40.824600,29.919007),
+          target: origin,
           zoom: 15.0,
         ),
       ),
     );
 
     busRoutes.forEach((BusRoutes.BusRoutesJSON busRoute) {
-      if(busRoute == null) return;
-      busRoute.route.forEach((BusRoutes.RoutesJSON route) {
-        if(route == null)
-          return;
-        StopsJSON prevStop;
-        route.stops.forEach((StopsJSON stop) {
-          if(stop == null)
-            return;
+      if (busRoute == null) return;
+
+      busRoute.routes.forEach((BusRoutes.RoutesJSON route) {
+        if (route == null) return;
+
+        int index = 0;
+        route.polylines.forEach((String line) {
+          if (line == null) return;
+
+          List<PointLatLng> result = PolylinePoints().decodePolyline(line);
           List<LatLng> polylineCoordinates = [];
-          if(prevStop != null)
-            polylineCoordinates.add(LatLng(prevStop.stopLatitude, prevStop.stopLongitude));
-          polylineCoordinates.add(LatLng(stop.stopLatitude, stop.stopLongitude));
-          PolylineId id = PolylineId(stop.stopId);
-          Polyline polyline = Polyline(
-              polylineId: id,
-              color: Colors.green,
-              points: polylineCoordinates,
-              width: 2,
-              geodesic: true,
-              startCap: Cap.buttCap,
-              endCap: Cap.roundCap,
-              consumeTapEvents: true,
-              onTap: () {
-                print('Departure Time is ' + route.departureTime);
-              });
-          polylines[id] = polyline;
-          prevStop = stop;
-          setState(() {});
+
+          if (result.isNotEmpty) {
+            result.forEach((PointLatLng point) {
+              polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+            });
+
+            PolylineId id = PolylineId(route.tripId + "-" + index.toString());
+            Polyline polyline = Polyline(
+                polylineId: id,
+                color: Colors.green,
+                points: polylineCoordinates,
+                width: 2,
+                geodesic: true,
+                startCap: Cap.buttCap,
+                endCap: Cap.roundCap,
+                consumeTapEvents: true,
+                onTap: () {
+                  print('Departure Time is ' + route.departureTime);
+                });
+            polylines[id] = polyline;
+          }
+
+          index++;
         });
       });
+    });
+
+    setState(() {
+      _isLoading = false;
     });
   }
 }

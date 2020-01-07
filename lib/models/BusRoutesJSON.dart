@@ -1,20 +1,20 @@
 import 'package:routing/models/StopsJSON.dart';
 
 class BusRoutesJSON {
-  final String origin;
-  final String destination;
-  final List<RoutesJSON> route;
+  final StopsJSON origin;
+  final StopsJSON destination;
+  final List<RoutesJSON> routes;
 
-  BusRoutesJSON({this.origin, this.destination, this.route});
+  BusRoutesJSON({this.origin, this.destination, this.routes});
 
   factory BusRoutesJSON.fromJson(Map<String, dynamic> json) {
     if(json == null)
       return null;
-    var list = json['route'] as List;
+    var list = json['routes'] as List;
     return new BusRoutesJSON(
-      origin: json['origin'],
-      destination: json['destination'],
-      route: list
+      origin: StopsJSON.fromJson(json['origin']),
+      destination: StopsJSON.fromJson(json['destination']),
+      routes: list
           .map((i) => RoutesJSON.fromJson(i))
           .toList(),
     );
@@ -27,13 +27,15 @@ class RoutesJSON {
   final String departureTime;
   final String arrivalTime;
   final List<StopsJSON> stops;
+  final List<String> polylines;
 
-  RoutesJSON({this.routeId, this.tripId, this.departureTime, this.arrivalTime, this.stops});
+  RoutesJSON({this.routeId, this.tripId, this.departureTime, this.arrivalTime, this.stops, this.polylines});
 
   factory RoutesJSON.fromJson(Map<String, dynamic> json) {
     if(json == null)
       return null;
     var list = json['stops'] as List;
+    var polys = json['polylines'] as List;
     return new RoutesJSON(
       routeId: json['route_id'],
       tripId: json['trip_id'],
@@ -42,6 +44,7 @@ class RoutesJSON {
       stops: list
           .map((i) => StopsJSON.fromJson(i))
           .toList(),
+      polylines: List.from(polys)
     );
   }
 }
