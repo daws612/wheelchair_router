@@ -4,6 +4,7 @@ const util = require('util');
 const config = require('./config');
 const getPath = require('./getPath');
 const getRoutes = require('./getRoutes');
+const getStops = require('./getStops');
 var logFileName = __dirname + '/api-cache.log';
 
 var server = restify.createServer();
@@ -11,6 +12,7 @@ var server = restify.createServer();
 server.use(restify.plugins.queryParser());
 server.get('/getpath', getPath.httpFetchPolylinePath);
 server.get('/getbusroutes', getRoutes.getBusRoutes);
+server.get('/getbusstops', getStops.getBusStops);
 
 //log to file
 var logFile = fs.createWriteStream(logFileName, { flags: 'a' });
