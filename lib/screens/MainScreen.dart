@@ -53,6 +53,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   double _panelHeightClosed = 95.0;
   PanelController _panelController = new PanelController();
 
+  BitmapDescriptor busIcon;
+  bool showStops = true;
+
   @override
   void dispose() {
     _originController.dispose();
@@ -104,7 +107,14 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           }
         });
       }
-    }); // handling in callback to prevent blocking UI
+    });
+    // handling in callback to prevent blocking UI
+
+    BitmapDescriptor.fromAssetImage(ImageConfiguration(size: Size(48, 48)),
+            'assets/images/bus_stop_32.png')
+        .then((onValue) {
+      busIcon = onValue;
+    });
   }
 
   LatLng _center = const LatLng(40.763221, 29.925132);
@@ -216,6 +226,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 ])),
         showCircularProgress(),
         showGetDirectionsButton(),
+        toggleStopsButton(),
       ]),
     );
   }
@@ -404,6 +415,33 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
   }
 
+  Widget toggleStopsButton() {
+    return new Positioned(
+        //alignment: Alignment.bottomRight,
+        top: _destinationSet ? 225.0 : 155.0,
+        right: 10.0,
+        width: 40,
+        child: SizedBox(
+          height: 40,
+          child: RaisedButton(
+            padding: EdgeInsets.all(0),
+            //shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+            color: showStops ? Colors.white : Colors.grey,
+            child: ImageIcon(
+              AssetImage('assets/images/bus_stop_64.png'),
+              color: Colors.black54,
+            ),
+            onPressed: () {
+              showStops = !showStops;
+              if (showStops)
+                getStopsWithinArea(null);
+              else
+                _toggleVisible();
+            },
+          ),
+        ));
+  }
+
   _navigateAndDisplaySelection(BuildContext context, bool origin) async {
     // Navigator.push returns a Future that completes after calling
     // Navigator.pop on the Selection Screen.
@@ -504,6 +542,20 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     _getBusRoutes(origin, destination);
 
+    //_fetchGoogleMapDirections(origin, destination);
+
+    // If the widget was removed from the tree while the message was in flight,
+    // we want to discard the reply rather than calling setState to update our
+    // non-existent appearance.
+    if (!mounted) return;
+
+    setState(() {
+      //_isLoading = false;
+    });
+    if (routes.isNotEmpty) _panelController.show();
+  }
+
+  _fetchGoogleMapDirections(LatLng origin, LatLng destination) async {
     String params = "?origin=" +
         origin.latitude.toString() +
         ',' +
@@ -531,16 +583,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     } catch (exception) {
       print(exception);
     }
-
-    // If the widget was removed from the tree while the message was in flight,
-    // we want to discard the reply rather than calling setState to update our
-    // non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      //_isLoading = false;
-    });
-    if (routes.isNotEmpty) _panelController.show();
   }
 
   _renderPolylines(List<RoutesJSON> routes) {
@@ -625,27 +667,50 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     //   _isLoading = true;
     //   _progressText = 'Updating map ... stops';
     // });
-    List<StopsJSON> stops = await DataService().fetchData(visibleRegion);
-
-    if (stops.isNotEmpty) {
-      stops.forEach((StopsJSON stop) {
-        Marker m = Marker(
-            markerId: MarkerId(stop.stopId.toString()),
-            position: LatLng(stop.stopLatitude, stop.stopLongitude),
-            infoWindow: InfoWindow(
-                title: stop.stopCode.toString() + " - " + stop.stopName),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueYellow));
-        _markers[stop.stopId.toString()] = m;
-      });
-      setState(() {
-        //_isLoading = false;
-      });
-    } else {
-      setState(() {
-        //_isLoading = false;
-      });
+    if (visibleRegion == null && _controller != null) {
+      visibleRegion = await _controller.getVisibleRegion();
+      print("Toggle Show Stops! VisibleRegion: " + visibleRegion.toString());
     }
+
+    if (visibleRegion == null || _controller == null) return;
+
+    if (showStops) {
+      _toggleVisible();
+      List<StopsJSON> stops = await DataService().fetchData(visibleRegion);
+
+      if (stops.isNotEmpty) {
+        stops.forEach((StopsJSON stop) {
+          Marker m = Marker(
+              visible: showStops,
+              markerId: MarkerId("stop-" + stop.stopId.toString()),
+              position: LatLng(stop.stopLatitude, stop.stopLongitude),
+              infoWindow: InfoWindow(
+                  title: stop.stopCode.toString() + " - " + stop.stopName),
+              icon: busIcon);
+          _markers[stop.stopId.toString()] = m;
+        });
+        setState(() {
+          //_isLoading = false;
+        });
+      } else {
+        setState(() {
+          //_isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleVisible() async {
+    _markers.forEach((key, value) {
+      String id = value.markerId.value;
+      if (id.startsWith("stop-")) {
+        setState(() {
+          _markers[key] = value.copyWith(
+            visibleParam: showStops,
+          );
+        });
+      }
+    });
   }
 
   void _getBusRoutes(LatLng origin, LatLng destination) async {
@@ -699,7 +764,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         });
       });
     });
-
+    if (!mounted) return;
     setState(() {
       _isLoading = false;
     });
