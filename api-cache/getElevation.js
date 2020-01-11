@@ -3,14 +3,8 @@ const util = require('util');
 const config = require('./config');
 const commons = require('./commons');
 
-async function getElevation(req, res, next) {
+async function httpGetElevation(req, res, next) {
 
-    const db = commons.makeDb({
-        host: config.schema.host,
-        user: config.schema.user,
-        password: config.schema.password,
-        database: config.schema.db
-    });
     var result = [];
 
     try {
@@ -18,48 +12,79 @@ async function getElevation(req, res, next) {
         var originHttp = params.origin;
         var destinationHttp = params.destination;
 
-        var googleUrlDirections = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=driving&key=%s', originHttp, destinationHttp, config.google.apikey);
-       
-        var polyResults = await commons.fetchDataFromCache(originHttp, destinationHttp, "polyline_path", "polyline_json", googleUrlDirections);
-        var polyline = JSON.parse(polyResults);
-        polyline = polyline.routes[0].overview_polyline.points;
-
-        //get the route from origin to destination
-        //var polyline = await getPath.fetchPolylinePath(originHttp, destinationHttp);
-        if (!polyline)
-            res.send({ error: "No polyline found" });
-
-        //decode the polyline to get the points on the route
-        var path = decode(polyline);
-
-        //get elevation between each 2 consecutive points on a path
-        var pathData = [];
-        console.log("Fetch elevation data for " + path.length + " points between " + originHttp + " and " + destinationHttp);
-        for (var p = 0; p < path.length - 1; p++) {
-            console.log(" Get elevation for index " + p);
-            var origin = path[p].latitude + "," + path[p].longitude;
-            var destination = path[p + 1].latitude + "," + path[p + 1].longitude;
-
-            var googleUrlElevation = config.google.elevation.url + util.format('?path=%s|%s&samples=3&mode=walking&key=%s', origin, destination, config.google.apikey);
-            var elevResult = await commons.fetchDataFromCache(origin, destination, "elevation_path", "elevation_json", googleUrlElevation);
-
-            var elevation = JSON.parse(elevResult);
-            elevation = elevation.results;
-            pathData.push({ origin, destination, elevation });
-        }
-
-        result.push({ polyline, pathData });
-
+        var result = await getElevation(originHttp, destinationHttp);
         res.send(result);
     } catch (ex) {
         console.error('Unexpected exception occurred when trying to get elevation \n' + ex);
         res.send(ex);
-    } finally {
-        await db.close();
     }
 
 }
 
+async function getElevation(originHttp, destinationHttp) {
+    return new Promise(async (resolve, reject) => {
+
+        const db = commons.makeDb({
+            host: config.schema.host,
+            user: config.schema.user,
+            password: config.schema.password,
+            database: config.schema.db
+        });
+        var result = {polyline: "", pathData: ""};
+
+        try {
+
+            var googleUrlDirections = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=walking&key=%s', originHttp, destinationHttp, config.google.apikey);
+
+            var polyResults = await commons.fetchDataFromCache(originHttp, destinationHttp, "polyline_path", "polyline_json", googleUrlDirections, "walking");
+            var polyline = JSON.parse(polyResults);
+            if (polyline.routes.length === 0)
+                resolve(result);
+            polyline = polyline.routes[0].overview_polyline.points;
+
+            //get the route from origin to destination
+            //var polyline = await getPath.fetchPolylinePath(originHttp, destinationHttp);
+            if (!polyline)
+                res.send({ error: "No polyline found" });
+
+            //decode the polyline to get the points on the route
+            var path = decode(polyline);
+
+            //get elevation between each 2 consecutive points on a path
+            var pathData = [];
+            console.log("Fetch elevation data for " + path.length + " points between " + originHttp + " and " + destinationHttp);
+            for (var p = 0; p < path.length - 1; p++) {
+                console.log(" Get elevation for index " + p);
+                var origin = path[p].latitude + "," + path[p].longitude;
+                var destination = path[p + 1].latitude + "," + path[p + 1].longitude;
+
+                var googleUrlElevation = config.google.elevation.url + util.format('?path=%s|%s&samples=2&mode=walking&key=%s', origin, destination, config.google.apikey);
+                var elevResult = await commons.fetchDataFromCache(origin, destination, "elevation_path", "elevation_json", googleUrlElevation, "walking");
+                var elevation = JSON.parse(elevResult);
+
+                var run = getDistance(path[p], path[p+1]);
+                var rise = elevation.results[1].elevation - elevation.results[0].elevation; // if negative, down slope
+                var slope = (rise / run) * 100.0;
+
+                elevation = elevation.results;
+                pathData.push({ origin, destination, elevation, slope });
+            }
+
+            result.polyline = polyline;
+            result.pathData = pathData;
+
+            //result.push({ polyline, pathData });
+
+            resolve(result);
+        } catch (ex) {
+            console.error('Unexpected exception occurred when trying to get elevation \n' + ex);
+            return ex;
+        } finally {
+            await db.close();
+        }
+    });
+
+}
 // source: http://doublespringlabs.blogspot.com.br/2012/11/decoding-polylines-from-google-maps.html
 function decode(encoded) {
 
@@ -112,6 +137,7 @@ var getDistance = function (p1, p2) {
     return d; // returns the distance in meter
 };
 
+module.exports.httpGetElevation = httpGetElevation;
 module.exports.getElevation = getElevation;
 
 /*

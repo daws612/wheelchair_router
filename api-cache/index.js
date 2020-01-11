@@ -14,7 +14,7 @@ server.use(restify.plugins.queryParser());
 server.get('/getpath', getPath.httpFetchPolylinePath);
 server.get('/getbusroutes', getRoutes.getBusRoutes);
 server.get('/getbusstops', getStops.getBusStops);
-server.get('/getelevation', getElevation.getElevation);
+server.get('/getelevation', getElevation.httpGetElevation);
 
 //log to file
 var logFile = fs.createWriteStream(logFileName, { flags: 'a' });

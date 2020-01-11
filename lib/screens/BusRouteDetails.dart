@@ -1,14 +1,13 @@
 import 'package:charts_flutter/flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:routing/models/BusRoutesJSON.dart';
-import 'package:routing/models/RoutesJSON.dart';
 
 class BusRouteDetails extends StatelessWidget {
   BusRouteDetails(
       {Key key, this.route, this.index, this.radioValue, this.onClicked})
       : super(key: key);
 
-  final BusRoutesJSON route;
+  final RoutesJSON route;
   final int index;
   final int radioValue;
   final VoidCallback onClicked;
@@ -32,7 +31,7 @@ class BusRouteDetails extends StatelessWidget {
                                 CircleAvatar(
                                   backgroundColor: Colors.transparent,
                                   backgroundImage: AssetImage(
-                                      'assets/images/wheelchair_accessible.jpg'),
+                                      'assets/images/accessible1.png'),
                                 ),
                                 new Radio(
                                   value: index,
@@ -56,7 +55,7 @@ class BusRouteDetails extends StatelessWidget {
                                             CrossAxisAlignment.start,
                                         children: <Widget>[
                                           Text(
-                                            "Route Distance: " ,
+                                            "Route: "  + route.routeShortName,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),

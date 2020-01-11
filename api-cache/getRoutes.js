@@ -1,6 +1,7 @@
 const config = require('./config');
 const commons = require('./commons');
 const util = require('util');
+const getElevation = require('./getElevation');
 
 async function getBusRoutes(req, res, next) {
 
@@ -19,6 +20,8 @@ async function getBusRoutes(req, res, next) {
         var originlon = params.originlon;
         var destlat = params.destlat;
         var destlon = params.destlon;
+        var originHttp = originlat + "," + originlon;
+        var destinationHttp = destlat + "," + destlon;
 
         var nearestStopQuery = "SELECT *, 'destination' as stoptype, " +
             "ST_Distance_Sphere( " +
@@ -38,16 +41,16 @@ async function getBusRoutes(req, res, next) {
         var pageSize = 2;
         var pageStart = 0;
         var pageEnd = pageStart + pageSize;
-        while(result.length == 0 && pageStart < nearestOrigin.length){
-            result = await createRouteDetails(db, pageStart, pageEnd, nearestOrigin, nearestDest, result);
-            if(result.length == 0) {
+        while (result.length == 0 && pageStart < nearestOrigin.length) {
+            result = await createRouteDetails(originHttp, destinationHttp, db, pageStart, pageEnd, nearestOrigin, nearestDest, result);
+            if (result.length == 0) {
                 pageStart = pageEnd;
                 pageEnd = pageEnd + pageSize;
             }
         }
-        
+
         res.send(result);
-        
+
     } catch (ex) {
         console.error('Unexpected exception occurred when trying to get directions \n' + ex);
         res.send(ex);
@@ -57,20 +60,20 @@ async function getBusRoutes(req, res, next) {
 
 }
 
-async function createRouteDetails(db, pageStart, pageEnd, nearestOrigin, nearestDest, result) {
+async function createRouteDetails(originHttp, destinationHttp, db, pageStart, pageEnd, nearestOrigin, nearestDest, result) {
     for (var i = pageStart; i < nearestOrigin.length && i < pageEnd; i++) {
         for (var j = 0; j < nearestDest.length && j < pageEnd; j++) {
-            result = await fetchDBRoutes(db, i, j, nearestOrigin, nearestDest, result)
+            result = await fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigin, nearestDest, result)
         } //for dest
     }// for origin
 
     //all origins have been checked against destinations, if still no route found, 
     //go through all origins with the remaining unchecked destinations.
     //This will complete the stop pairs in the retrieved arrays
-    if(result.length == 0 && pageEnd >= nearestOrigin.length && pageEnd < nearestDest.length) {
-        for(var orgn = 0; orgn < nearestOrigin.length; orgn++) {
-            for(var dstn = pageEnd; dstn < nearestDest.length; dstn++) {
-                result = await fetchDBRoutes(db, orgn, dstn, nearestOrigin, nearestDest, result)
+    if (result.length == 0 && pageEnd >= nearestOrigin.length && pageEnd < nearestDest.length) {
+        for (var orgn = 0; orgn < nearestOrigin.length; orgn++) {
+            for (var dstn = pageEnd; dstn < nearestDest.length; dstn++) {
+                result = await fetchDBRoutes(originHttp, destinationHttp, db, orgn, dstn, nearestOrigin, nearestDest, result)
             }
         }
     }
@@ -78,9 +81,9 @@ async function createRouteDetails(db, pageStart, pageEnd, nearestOrigin, nearest
     return result;
 }
 
-async function fetchDBRoutes(db, i, j, nearestOrigin, nearestDest, result) {
+async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigin, nearestDest, result) {
 
-    console.log("Search for origin " + i + " and destination " + j); 
+    console.log("Search for origin " + i + " and destination " + j);
     var origin = nearestOrigin[i];
     var destination = nearestDest[j];
     var row = [];
@@ -123,29 +126,50 @@ async function fetchDBRoutes(db, i, j, nearestOrigin, nearestDest, result) {
                 "left join stop_times st on st.stop_id = s.stop_id " +
                 "WHERE st.stop_id = ? and trip_id = ?) " +
                 "ORDER BY stop_sequence asc";
+                //howcan this query be made to include the origin and destination stops?
             var routeStops = await db.query(routeStopsQuery, [tripId, stop1, tripId, stop2, tripId]);
             routes[k]['stops'] = routeStops;
 
-            var routePolylines=[];
-            for(var l = 0; l < routeStops.length - 1; l++) {
+            if(routes[k].stops.length < 1) {
+                routes.splice(k, 1); //remove kth element
+                k--;
+                continue;
+            }
+
+            var routePolylines = [];
+            for (var l = 0; l < routeStops.length - 1; l++) {
                 var originStop = routeStops[l].stop_lat + "," + routeStops[l].stop_lon;
-                var destStop = routeStops[l+1].stop_lat + "," + routeStops[l+1].stop_lon;
-                
+                var destStop = routeStops[l + 1].stop_lat + "," + routeStops[l + 1].stop_lon;
+
                 var googleUrl = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=driving&key=%s', originStop, destStop, config.google.apikey);
-                var polylineResult = await commons.fetchDataFromCache(originStop, destStop, "polyline_path", "polyline_json", googleUrl);
+                var polylineResult = await commons.fetchDataFromCache(originStop, destStop, "polyline_path", "polyline_json", googleUrl, "driving");
                 var polyline = JSON.parse(polylineResult);
                 polyline = polyline.routes[0].overview_polyline.points;
-                
+
                 //var polyline = await getPath.fetchPolylinePath(originStop, destStop);
-                if(polyline)
+                if (polyline)
                     routePolylines.push(polyline);
             }
             routes[k]['polylines'] = routePolylines;
+
+
+            if (routeStops.length > 0) {
+                var firstStop = routeStops[0].stop_lat + "," + routeStops[0].stop_lon;
+
+                var tofirstStop = await getElevation.getElevation(originHttp, firstStop);
+                routes[k]["toFirstStop"] = tofirstStop;
+
+
+                var lastStop = routeStops[routeStops.length - 1].stop_lat + "," + routeStops[routeStops.length - 1].stop_lon;
+
+                var fromLastStop = await getElevation.getElevation(lastStop, destinationHttp);
+                routes[k]["fromLastStop"] = fromLastStop;
+            }
         } //for routes
     }//if routes
-    if(routes.length > 0)
-        result.push({origin, destination, routes});
-    
+    if (routes.length > 0)
+        result = result.concat(routes);
+
     return result;
 }
 

@@ -38,7 +38,7 @@ class DataService {
     return stops;
   }
 
-  Future<List<BusRoutesJSON>> fetchRoutes(LatLng origin, LatLng destination) async {
+  Future<List<RoutesJSON>> fetchRoutes(LatLng origin, LatLng destination) async {
     String params = "?originlat=" +
         origin.latitude.toString() +
         '&originlon=' +
@@ -55,7 +55,7 @@ class DataService {
     print("Fetching routes from - " + url);
 
     List<dynamic> routesJSON;
-    List<BusRoutesJSON> busRoutes = [];
+    List<RoutesJSON> busRoutes = [];
     try {
       Response response = await Dio().get(url);
       if (response.statusCode == 200) {
@@ -63,7 +63,7 @@ class DataService {
 
         if (routesJSON.isNotEmpty) {
           print("Routes received :: " + routesJSON.length.toString());
-          busRoutes = routesJSON.map((i) => BusRoutesJSON.fromJson(i)).toList();
+          busRoutes = routesJSON.map((i) => RoutesJSON.fromJson(i)).toList();
         }
       } else {
         print("No bus routes found");
