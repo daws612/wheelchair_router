@@ -17,6 +17,8 @@ import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
+import 'BusRouteDetails.dart';
+
 const kGoogleApiKey = "AIzaSyBUOmQEmER7vOSpaf0UvwYSwzQmhG2hcTs";
 DirectionsAPI.GoogleMapsDirections directions =
     DirectionsAPI.GoogleMapsDirections(apiKey: kGoogleApiKey);
@@ -43,6 +45,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Map<PolylineId, Polyline> polylines = {};
   List<RoutesJSON> routes = [];
+  List<BusRoutes.BusRoutesJSON> busRoutes = [];
   int selectedRoute = 0;
 
   String _progressText = 'Loading';
@@ -53,7 +56,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   double _panelHeightClosed = 95.0;
   PanelController _panelController = new PanelController();
 
-  BitmapDescriptor busIcon;
+  BitmapDescriptor busStopIcon;
   bool showStops = true;
 
   @override
@@ -113,7 +116,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     BitmapDescriptor.fromAssetImage(ImageConfiguration(size: Size(48, 48)),
             'assets/images/bus_stop_32.png')
         .then((onValue) {
-      busIcon = onValue;
+      busStopIcon = onValue;
     });
   }
 
@@ -150,7 +153,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void _onCameraIdle() async {
     if (_controller == null) return;
     LatLngBounds visibleRegion = await _controller.getVisibleRegion();
-    print("Camera Idle! VisibleRegion: " + visibleRegion.toString());
+    //print("Camera Idle! VisibleRegion: " + visibleRegion.toString());
     getStopsWithinArea(visibleRegion);
   }
 
@@ -232,7 +235,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget _panel() {
-    if (routes.isNotEmpty) {
+    //if (routes.isNotEmpty) {
       return Column(
         children: <Widget>[
           SizedBox(
@@ -311,10 +314,10 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           ),
         ],
       );
-    } else {
-      //_panelController.hide();
-      return Container();
-    }
+    // } else {
+    //   //_panelController.hide();
+    //   return Container();
+    // }
   }
 
   Widget showOriginTextField() {
@@ -540,19 +543,19 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ? _markers["Origin"].position
         : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
 
-    _getBusRoutes(origin, destination);
+    //_getBusRoutes(origin, destination);
 
-    //_fetchGoogleMapDirections(origin, destination);
+    await _fetchGoogleMapDirections(origin, destination);
 
     // If the widget was removed from the tree while the message was in flight,
     // we want to discard the reply rather than calling setState to update our
     // non-existent appearance.
     if (!mounted) return;
 
-    setState(() {
-      //_isLoading = false;
-    });
     if (routes.isNotEmpty) _panelController.show();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   _fetchGoogleMapDirections(LatLng origin, LatLng destination) async {
@@ -660,22 +663,17 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   //Load stops for visible area
   void getStopsWithinArea(LatLngBounds visibleRegion) async {
-    //https://stackoverflow.com/questions/56475991/firestore-query-geopoints-using-bounds-lessthan-morethan
-    //https://stackoverflow.com/questions/4834772/get-all-records-from-mysql-database-that-are-within-google-maps-getbounds/20741219#20741219
-    //FirestoreService().getNearbyStops(visibleRegion);
-    // setState(() {
-    //   _isLoading = true;
-    //   _progressText = 'Updating map ... stops';
-    // });
     if (visibleRegion == null && _controller != null) {
       visibleRegion = await _controller.getVisibleRegion();
       print("Toggle Show Stops! VisibleRegion: " + visibleRegion.toString());
     }
 
+    //If we cant get the visible area and controller is also null, the map hasnt initialized yet
     if (visibleRegion == null || _controller == null) return;
 
     if (showStops) {
-      _toggleVisible();
+      _toggleVisible(); //show already fetched stops then fetch
+
       List<StopsJSON> stops = await DataService().fetchData(visibleRegion);
 
       if (stops.isNotEmpty) {
@@ -686,27 +684,24 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               position: LatLng(stop.stopLatitude, stop.stopLongitude),
               infoWindow: InfoWindow(
                   title: stop.stopCode.toString() + " - " + stop.stopName),
-              icon: busIcon);
+              icon: busStopIcon);
           _markers[stop.stopId.toString()] = m;
         });
-        setState(() {
-          //_isLoading = false;
-        });
+        setState(() {});
       } else {
-        setState(() {
-          //_isLoading = false;
-        });
+        setState(() {});
       }
     }
   }
 
   Future<void> _toggleVisible() async {
+    //find stop markers only and toggle their visibility
     _markers.forEach((key, value) {
       String id = value.markerId.value;
       if (id.startsWith("stop-")) {
         setState(() {
           _markers[key] = value.copyWith(
-            visibleParam: showStops,
+            visibleParam: showStops, //!value.visible as per docs
           );
         });
       }
@@ -715,8 +710,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void _getBusRoutes(LatLng origin, LatLng destination) async {
     //https://stackoverflow.com/questions/13407468/how-can-i-list-all-the-stops-associated-with-a-route-using-gtfs
-    List<BusRoutes.BusRoutesJSON> busRoutes =
-        await DataService().fetchRoutes(origin, destination);
+    busRoutes = await DataService().fetchRoutes(origin, destination);
     _controller.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -725,7 +719,11 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ),
       ),
     );
+    _renderBusRoute(busRoutes);
+  }
 
+  _renderBusRoute(List<BusRoutes.BusRoutesJSON> routes) {
+    polylines.clear();
     busRoutes.forEach((BusRoutes.BusRoutesJSON busRoute) {
       if (busRoute == null) return;
 
@@ -744,20 +742,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               polylineCoordinates.add(LatLng(point.latitude, point.longitude));
             });
 
-            PolylineId id = PolylineId(route.tripId + "-" + index.toString());
-            Polyline polyline = Polyline(
-                polylineId: id,
-                color: Colors.green,
-                points: polylineCoordinates,
-                width: 2,
-                geodesic: true,
-                startCap: Cap.buttCap,
-                endCap: Cap.roundCap,
-                consumeTapEvents: true,
-                onTap: () {
-                  print('Departure Time is ' + route.departureTime);
-                });
-            polylines[id] = polyline;
+            _addBusPolyLine(index, polylineCoordinates, route.tripId);
           }
 
           index++;
@@ -768,6 +753,23 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     setState(() {
       _isLoading = false;
     });
+  }
+
+  _addBusPolyLine(int index, List<LatLng> polylineCoordinates, String tripId) {
+    PolylineId id = PolylineId(tripId + "-" + index.toString());
+    Polyline polyline = Polyline(
+      polylineId: id,
+      color: Colors.green,
+      points: polylineCoordinates,
+      width: 2,
+      geodesic: true,
+      startCap: Cap.buttCap,
+      endCap: Cap.roundCap,
+      consumeTapEvents: true,
+    );
+    polylines[id] = polyline;
+    if (!mounted) return;
+    setState(() {});
   }
 }
 
