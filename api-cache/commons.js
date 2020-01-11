@@ -29,7 +29,7 @@ client.on('error', function (err) {
     console.log("Error " + err);
 });
 
-function fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName) {
+function fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, directionsMode) {
     return new Promise(async (resolve, reject) => {
 
         try {
@@ -43,18 +43,18 @@ function fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName) {
 
                 console.log(util.format('Successfully returned from google api %s \n', googleUrl));
 
-                await saveCacheData(origin, destination, cobj, tableName, fieldName);
+                await saveCacheData(origin, destination, cobj, tableName, fieldName, directionsMode);
                 resolve(JSON.stringify(cobj));
             });
 
         } catch (ex) {
             console.error('Unexpected exception occurred when trying to fetch from google api \n' + ex);
-            return ex;
+            reject(ex);
         }
     });
 }
 
-function fetchDataFromCache(origin, destination, tableName, fieldName, googleUrl) {
+function fetchDataFromCache(origin, destination, tableName, fieldName, googleUrl, directionsMode) {
     try {
         const mysqlConn = makeDb({
             host: config.schema.host,
@@ -63,14 +63,18 @@ function fetchDataFromCache(origin, destination, tableName, fieldName, googleUrl
             database: config.schema.db
         });
         return new Promise(async (resolve, reject) => {
-            var sqlQuery = util.format('SELECT id, %s FROM %s WHERE origin = "%s" AND destination = "%s"', fieldName, tableName, origin, destination);
+            var sqlQuery;
+            if (fieldName === "polyline_json")
+                sqlQuery = util.format('SELECT id, %s FROM %s WHERE origin = "%s" AND destination = "%s" and mode = "%s"', fieldName, tableName, origin, destination, directionsMode);
+            else
+                sqlQuery = util.format('SELECT id, %s FROM %s WHERE origin = "%s" AND destination = "%s"', fieldName, tableName, origin, destination);
             var queryResult = await mysqlConn.query(sqlQuery);
             if (queryResult.length === 0) {
-                resolve(fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName));
+                resolve(fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, directionsMode));
             } else {
-                if(fieldName === "polyline_json")
+                if (fieldName === "polyline_json")
                     resolve(queryResult[0].polyline_json);
-                else if(fieldName === "elevation_json")
+                else if (fieldName === "elevation_json")
                     resolve(queryResult[0].elevation_json)
                 else
                     resolve(queryResult);
@@ -83,7 +87,7 @@ function fetchDataFromCache(origin, destination, tableName, fieldName, googleUrl
     }
 }
 
-async function saveCacheData(origin, destination, cobj, tableName, fieldName) {
+async function saveCacheData(origin, destination, cobj, tableName, fieldName, directionsMode) {
 
     const mysqlConn = makeDb({
         host: config.schema.host,
@@ -92,7 +96,11 @@ async function saveCacheData(origin, destination, cobj, tableName, fieldName) {
         database: config.schema.db
     });
     //util.format('?origin=%s&destination=%s&mode=driving&key=%s', origin, destination, config.google.apikey);
-    var sqlQuery = util.format('INSERT INTO %s(origin,destination,%s) VALUES(?,?,?)', tableName, fieldName);
+    var sqlQuery;
+    if (fieldName === "polyline_json")
+     sqlQuery = util.format('INSERT INTO %s(origin,destination,%s,mode) VALUES(?,?,?,"%s")', tableName, fieldName, directionsMode);
+    else
+    sqlQuery = util.format('INSERT INTO %s(origin,destination,%s) VALUES(?,?,?)', tableName, fieldName);
     await mysqlConn.query(sqlQuery, [origin, destination, JSON.stringify(cobj)]);
     mysqlConn.close();
 }

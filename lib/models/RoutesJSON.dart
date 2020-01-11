@@ -1,3 +1,5 @@
+import 'LocationJSON.dart';
+
 class RoutesJSON {
   final int routeIndex;
   final String routeTotalDistance;
@@ -51,16 +53,4 @@ class PolylineJSON {
   }
 }
 
-class LocationJSON {
-  double latitude;
-  double longitude;
 
-  LocationJSON({this.latitude, this.longitude});
-
-  factory LocationJSON.fromJson(Map<String, dynamic> json) {
-    return new LocationJSON(
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-    );
-  }
-}

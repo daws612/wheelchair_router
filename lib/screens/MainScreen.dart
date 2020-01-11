@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:routing/models/BusRoutesJSON.dart' as BusRoutes;
+import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/RoutesJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
 import 'package:routing/screens/PathDetails.dart';
@@ -45,7 +46,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Map<PolylineId, Polyline> polylines = {};
   List<RoutesJSON> routes = [];
-  List<BusRoutes.BusRoutesJSON> busRoutes = [];
+  List<BusRoutes.RoutesJSON> busRoutes = [];
   int selectedRoute = 0;
 
   String _progressText = 'Loading';
@@ -53,7 +54,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   final double _initFabHeight = 120.0;
   double _fabHeight;
   double _panelHeightOpen = 375.0;
-  double _panelHeightClosed = 95.0;
+  double _panelHeightClosed = 65.0;
   PanelController _panelController = new PanelController();
 
   BitmapDescriptor busStopIcon;
@@ -182,7 +183,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             ),
             mapType: MapType.normal,
           ),
-          panel: _panel(),
+          panel: _busRoutesPanel(), //_googleWalkingDirectionsPanel(),
           borderRadius: BorderRadius.only(
               topLeft: Radius.circular(18.0), topRight: Radius.circular(18.0)),
           onPanelSlide: (double pos) => setState(() {
@@ -234,86 +235,86 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _panel() {
+  Widget _googleWalkingDirectionsPanel() {
     //if (routes.isNotEmpty) {
-      return Column(
-        children: <Widget>[
-          SizedBox(
-            height: 12.0,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Container(
-                width: 50,
-                height: 5,
-                decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.all(Radius.circular(12.0))),
-              ),
-            ],
-          ),
-          SizedBox(
-            height: 18.0,
-          ),
-          Row(
-            //mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Expanded(
-                flex: 9,
-                child: Text(
-                  "Route Details",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.normal,
-                    fontSize: 24.0,
-                  ),
+    return Column(
+      children: <Widget>[
+        SizedBox(
+          height: 12.0,
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              width: 50,
+              height: 5,
+              decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.all(Radius.circular(12.0))),
+            ),
+          ],
+        ),
+        SizedBox(
+          height: 18.0,
+        ),
+        Row(
+          //mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Expanded(
+              flex: 9,
+              child: Text(
+                "Route Details",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 24.0,
                 ),
               ),
-              Expanded(
-                flex: 1,
-                child: GestureDetector(
-                  onTap: () async {
-                    final ConfirmAction action =
-                        await _asyncConfirmDialog(context);
-                    if (action == ConfirmAction.ACCEPT) _closeRouting();
-                  },
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: CircleAvatar(
-                      radius: 14.0,
-                      backgroundColor: Theme.of(context).primaryColor,
-                      child: Icon(
-                        Icons.close,
-                        color: Colors.white,
-                      ),
+            ),
+            Expanded(
+              flex: 1,
+              child: GestureDetector(
+                onTap: () async {
+                  final ConfirmAction action =
+                      await _asyncConfirmDialog(context);
+                  if (action == ConfirmAction.ACCEPT) _closeRouting();
+                },
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CircleAvatar(
+                    radius: 14.0,
+                    backgroundColor: Theme.of(context).primaryColor,
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.white,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-          SizedBox(
-            height: 36.0,
-          ),
-          Expanded(
-            child: ListView.builder(
-                itemCount: routes.length, // records.length
-                itemBuilder: (BuildContext context, int i) {
-                  return PathDetails(
-                    route: routes[i],
-                    index: i,
-                    radioValue: selectedRoute,
-                    onClicked: () {
-                      selectedRoute = i;
-                      _renderPolylines(routes);
-                      setState(() {});
-                    },
-                  );
-                }),
-          ),
-        ],
-      );
+            ),
+          ],
+        ),
+        SizedBox(
+          height: 36.0,
+        ),
+        Expanded(
+          child: ListView.builder(
+              itemCount: routes.length, // records.length
+              itemBuilder: (BuildContext context, int i) {
+                return PathDetails(
+                  route: routes[i],
+                  index: i,
+                  radioValue: selectedRoute,
+                  onClicked: () {
+                    selectedRoute = i;
+                    _renderPolylines(routes);
+                    setState(() {});
+                  },
+                );
+              }),
+        ),
+      ],
+    );
     // } else {
     //   //_panelController.hide();
     //   return Container();
@@ -389,7 +390,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget showGetDirectionsButton() {
-    if (routes.isEmpty && _destinationSet) {
+    if (!(routes.isNotEmpty || busRoutes.isNotEmpty) && _destinationSet) {
       return new Stack(
         children: [
           Align(
@@ -398,7 +399,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 width: 180,
                 child: RaisedButton(
                   onPressed: () {
-                    _getFirebaseDirections();
+                    _getDirections();
                   },
                   child: const Text('Get Directions'),
                   color: Theme.of(context).primaryColor,
@@ -515,6 +516,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _markers.remove('Origin');
     _markers.remove('Destination');
     routes.clear();
+    busRoutes.clear();
     polylines.clear();
     if (_panelController.isPanelShown()) _panelController.hide();
     selectedRoute = 0;
@@ -523,12 +525,13 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   _resetMap() {
     routes.clear();
+    busRoutes.clear();
     polylines.clear();
     if (_panelController.isPanelShown()) _panelController.hide();
     selectedRoute = 0;
   }
 
-  _getFirebaseDirections() async {
+  _getDirections() async {
     setState(() {
       _isLoading = true;
       _progressText = 'Getting directions...';
@@ -543,9 +546,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ? _markers["Origin"].position
         : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
 
-    //_getBusRoutes(origin, destination);
+    await _getBusRoutes(origin, destination);
 
-    await _fetchGoogleMapDirections(origin, destination);
+    //await _fetchGoogleMapDirections(origin, destination);
 
     // If the widget was removed from the tree while the message was in flight,
     // we want to discard the reply rather than calling setState to update our
@@ -599,38 +602,10 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             .add(LatLng(point.origin.latitude, point.origin.longitude));
         polylineCoordinates.add(
             LatLng(point.destination.latitude, point.destination.longitude));
-        _addPolyLine(index, polylineCoordinates, point.slope, route);
+        _addPolyLine(
+            "poly-" + index.toString(), polylineCoordinates, point.slope);
       });
     });
-  }
-
-  _addPolyLine(int index, List<LatLng> polylineCoordinates, double slope,
-      RoutesJSON route) {
-    MaterialColor slopeColor;
-    if (slope > 7)
-      slopeColor = Colors.red;
-    else if (slope >= -7 && slope <= 7)
-      slopeColor = Colors.green;
-    else if (slope < -7) slopeColor = Colors.blue;
-
-    PolylineId id = PolylineId("poly" + index.toString());
-    Polyline polyline = Polyline(
-        polylineId: id,
-        color: route.routeIndex == selectedRoute
-            ? slopeColor
-            : slopeColor.withOpacity(0.3),
-        points: polylineCoordinates,
-        width: 2,
-        geodesic: true,
-        startCap: Cap.buttCap,
-        endCap: Cap.roundCap,
-        //patterns: patterns[route.routeIndex % 2],
-        consumeTapEvents: true,
-        onTap: () {
-          print('Distance is ' + route.routeTotalDistance);
-        });
-    polylines[id] = polyline;
-    setState(() {});
   }
 
   Future<ConfirmAction> _asyncConfirmDialog(BuildContext context) async {
@@ -708,7 +683,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     });
   }
 
-  void _getBusRoutes(LatLng origin, LatLng destination) async {
+  _getBusRoutes(LatLng origin, LatLng destination) async {
     //https://stackoverflow.com/questions/13407468/how-can-i-list-all-the-stops-associated-with-a-route-using-gtfs
     busRoutes = await DataService().fetchRoutes(origin, destination);
     _controller.animateCamera(
@@ -722,44 +697,78 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _renderBusRoute(busRoutes);
   }
 
-  _renderBusRoute(List<BusRoutes.BusRoutesJSON> routes) {
+  _renderBusRoute(List<BusRoutes.RoutesJSON> routes) {
     polylines.clear();
-    busRoutes.forEach((BusRoutes.BusRoutesJSON busRoute) {
-      if (busRoute == null) return;
+    List<LatLng> polylineCoordinates = [];
 
-      busRoute.routes.forEach((BusRoutes.RoutesJSON route) {
-        if (route == null) return;
+    busRoutes.forEach((BusRoutes.RoutesJSON route) {
+      if (route == null) return;
 
-        int index = 0;
-        route.polylines.forEach((String line) {
-          if (line == null) return;
+      int index = 0;
+      route.polylines.forEach((String line) {
+        if (line == null) return;
 
-          List<PointLatLng> result = PolylinePoints().decodePolyline(line);
-          List<LatLng> polylineCoordinates = [];
+        List<PointLatLng> result = PolylinePoints().decodePolyline(line);
+        polylineCoordinates = [];
 
-          if (result.isNotEmpty) {
-            result.forEach((PointLatLng point) {
-              polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-            });
+        if (result.isNotEmpty) {
+          result.forEach((PointLatLng point) {
+            polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+          });
 
-            _addBusPolyLine(index, polylineCoordinates, route.tripId);
-          }
+          _addPolyLine(route.tripId + "-" + index.toString(), polylineCoordinates, null);
+        }
 
-          index++;
+        index++;
+      }); //finish bus route polylines
+
+      //plot from current location to first bus stop
+      index = 0;
+      route.toFirstStop.pathData.forEach((BusRoutes.PolylineJSON elevation) {
+        polylineCoordinates = [];
+        elevation.location.forEach((LocationJSON coords) {
+          polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
         });
-      });
+        _addPolyLine(route.tripId + "-toFirstStop-" + index.toString(), polylineCoordinates,
+            elevation.slope);
+        index++;
+      }); //finish path to first stop
+
+      //plot from current location to first bus stop
+      index = 0;
+      route.fromLastStop.pathData.forEach((BusRoutes.PolylineJSON elevation) {
+        polylineCoordinates = [];
+        elevation.location.forEach((LocationJSON coords) {
+          polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
+        });
+        _addPolyLine(route.tripId + "-fromLastStop-" + index.toString(), polylineCoordinates,
+            elevation.slope);
+        index++;
+      }); //finish path to first stop
     });
     if (!mounted) return;
+    if (busRoutes.isNotEmpty) _panelController.show();
     setState(() {
       _isLoading = false;
     });
   }
 
-  _addBusPolyLine(int index, List<LatLng> polylineCoordinates, String tripId) {
-    PolylineId id = PolylineId(tripId + "-" + index.toString());
+  _addPolyLine(String polyId, List<LatLng> polylineCoordinates, double slope) {
+    MaterialColor slopeColor;
+    if (slope != null) {
+      if (slope > 7)
+        slopeColor = Colors.red;
+      else if (slope >= -7 && slope <= 7)
+        slopeColor = Colors.green;
+      else if (slope < -7) slopeColor = Colors.blue;
+    } else {
+      slopeColor = Colors.grey;
+    }
+
+    PolylineId id = PolylineId(polyId);
     Polyline polyline = Polyline(
       polylineId: id,
-      color: Colors.green,
+      color: slopeColor,
       points: polylineCoordinates,
       width: 2,
       geodesic: true,
@@ -768,8 +777,94 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       consumeTapEvents: true,
     );
     polylines[id] = polyline;
-    if (!mounted) return;
     setState(() {});
+  }
+
+  Widget _busRoutesPanel() {
+    if (busRoutes.isNotEmpty) {
+      return Column(
+        children: <Widget>[
+          SizedBox(
+            height: 12.0,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Container(
+                width: 50,
+                height: 5,
+                decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.all(Radius.circular(12.0))),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 9.0,
+          ),
+          Row(
+            //mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Expanded(
+                flex: 9,
+                child: Text(
+                  "Route Details",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.normal,
+                    fontSize: 18.0,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: GestureDetector(
+                  onTap: () async {
+                    final ConfirmAction action =
+                        await _asyncConfirmDialog(context);
+                    if (action == ConfirmAction.ACCEPT) _closeRouting();
+                  },
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: CircleAvatar(
+                      radius: 8.0,
+                      backgroundColor: Theme.of(context).primaryColor,
+                      child: Icon(
+                        Icons.close,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 16.0,
+          ),
+          Expanded(
+            child: ListView.builder(
+                itemCount: busRoutes.length, // records.length
+                itemBuilder: (BuildContext context, int i) {
+                  return BusRouteDetails(
+                    route: busRoutes[i],
+                    index: i,
+                    radioValue: selectedRoute,
+                    onClicked: () {
+                      selectedRoute = i;
+                      _renderBusRoute(busRoutes);
+                      setState(() {});
+                    },
+                  );
+                }),
+          ),
+        ],
+      );
+    } else {
+      //_panelController.hide();
+      return Container();
+    }
   }
 }
 

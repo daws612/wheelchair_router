@@ -1,3 +1,4 @@
+import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
 
 class BusRoutesJSON {
@@ -8,15 +9,12 @@ class BusRoutesJSON {
   BusRoutesJSON({this.origin, this.destination, this.routes});
 
   factory BusRoutesJSON.fromJson(Map<String, dynamic> json) {
-    if(json == null)
-      return null;
+    if (json == null) return null;
     var list = json['routes'] as List;
     return new BusRoutesJSON(
       origin: StopsJSON.fromJson(json['origin']),
       destination: StopsJSON.fromJson(json['destination']),
-      routes: list
-          .map((i) => RoutesJSON.fromJson(i))
-          .toList(),
+      routes: list.map((i) => RoutesJSON.fromJson(i)).toList(),
     );
   }
 }
@@ -30,12 +28,23 @@ class RoutesJSON {
   final String arrivalTime;
   final List<StopsJSON> stops;
   final List<String> polylines;
+  final WalkPathJSON toFirstStop;
+  final WalkPathJSON fromLastStop;
 
-  RoutesJSON({this.routeId, this.routeShortName, this.routeLongName, this.tripId, this.departureTime, this.arrivalTime, this.stops, this.polylines});
+  RoutesJSON(
+      {this.routeId,
+      this.routeShortName,
+      this.routeLongName,
+      this.tripId,
+      this.departureTime,
+      this.arrivalTime,
+      this.stops,
+      this.polylines,
+      this.toFirstStop,
+      this.fromLastStop});
 
   factory RoutesJSON.fromJson(Map<String, dynamic> json) {
-    if(json == null)
-      return null;
+    if (json == null) return null;
     var list = json['stops'] as List;
     var polys = json['polylines'] as List;
     return new RoutesJSON(
@@ -45,10 +54,39 @@ class RoutesJSON {
       tripId: json['trip_id'],
       departureTime: json['departure_time'],
       arrivalTime: json['arrival_time'],
-      stops: list
-          .map((i) => StopsJSON.fromJson(i))
-          .toList(),
-      polylines: List.from(polys)
+      stops: list.map((i) => StopsJSON.fromJson(i)).toList(),
+      polylines: List.from(polys),
+      toFirstStop: WalkPathJSON.fromJson(json['toFirstStop']),
+      fromLastStop: WalkPathJSON.fromJson(json['fromLastStop']),
+    );
+  }
+}
+
+class PolylineJSON {
+  List<LocationJSON> location;
+  double slope;
+
+  PolylineJSON({this.location, this.slope});
+
+  factory PolylineJSON.fromJson(Map<String, dynamic> json) {
+    var list = json['elevation'] as List;
+    return new PolylineJSON(
+      location: list.map((i) => LocationJSON.fromJson(i['location'])).toList(),
+      slope: json['slope'],
+    );
+  }
+}
+
+class WalkPathJSON {
+  List<PolylineJSON> pathData;
+
+  WalkPathJSON({this.pathData});
+
+  factory WalkPathJSON.fromJson(Map<String, dynamic> json) {
+    var list = json['pathData'] as List;
+    return new WalkPathJSON(
+      pathData:
+          list.map((i) => PolylineJSON.fromJson(i)).toList(),
     );
   }
 }
