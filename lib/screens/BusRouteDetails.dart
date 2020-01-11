@@ -14,6 +14,15 @@ class BusRouteDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    List<Series<PolylineJSON, int>> data = [
+      new Series<PolylineJSON, int>(
+        id: 'Slope',
+        colorFn: (_, __) => MaterialPalette.blue.shadeDefault,
+        domainFn: (PolylineJSON line, _) => line.pathIndex,
+        measureFn: (PolylineJSON line, _) => line.slope,
+        data: route.toFirstStop.pathData,
+      )
+    ];
 
     return Card(
         child: InkWell(
@@ -53,15 +62,27 @@ class BusRouteDetails extends StatelessWidget {
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                         children: <Widget>[
                                           Text(
-                                            "Route: "  + route.routeShortName,
+                                            "Route: "  + route.routeShortName + " - " + route.routeLongName,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       ),
                                     ),
+                                    Expanded(
+                                        flex: 10,
+                                        child: LineChart(
+                                          data,
+                                          animate: true,
+                                          animationDuration:
+                                              Duration(seconds: 2),
+                                          behaviors: <ChartBehavior> [
+                                            
+                                          ],
+                                        )),
                                   ],
                                 )),
                           )
