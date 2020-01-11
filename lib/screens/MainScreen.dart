@@ -602,8 +602,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             .add(LatLng(point.origin.latitude, point.origin.longitude));
         polylineCoordinates.add(
             LatLng(point.destination.latitude, point.destination.longitude));
-        _addPolyLine(
-            "poly-" + index.toString(), polylineCoordinates, point.slope);
+        _addPolyLine("poly-" + index.toString(), polylineCoordinates,
+            point.slope, route.routeIndex);
       });
     });
   }
@@ -716,7 +716,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             polylineCoordinates.add(LatLng(point.latitude, point.longitude));
           });
 
-          _addPolyLine(route.tripId + "-" + index.toString(), polylineCoordinates, null);
+          _addPolyLine(route.tripId + "-" + index.toString(),
+              polylineCoordinates, null, route.routeIndex);
         }
 
         index++;
@@ -729,8 +730,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         elevation.location.forEach((LocationJSON coords) {
           polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
         });
-        _addPolyLine(route.tripId + "-toFirstStop-" + index.toString(), polylineCoordinates,
-            elevation.slope);
+        _addPolyLine(route.tripId + "-toFirstStop-" + index.toString(),
+            polylineCoordinates, elevation.slope, route.routeIndex);
         index++;
       }); //finish path to first stop
 
@@ -741,8 +742,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         elevation.location.forEach((LocationJSON coords) {
           polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
         });
-        _addPolyLine(route.tripId + "-fromLastStop-" + index.toString(), polylineCoordinates,
-            elevation.slope);
+        _addPolyLine(route.tripId + "-fromLastStop-" + index.toString(),
+            polylineCoordinates, elevation.slope, route.routeIndex);
         index++;
       }); //finish path to first stop
     });
@@ -753,7 +754,10 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     });
   }
 
-  _addPolyLine(String polyId, List<LatLng> polylineCoordinates, double slope) {
+  _addPolyLine(String polyId, List<LatLng> polylineCoordinates, double slope,
+      int routeIndex) {
+    if (routeIndex != null && selectedRoute != routeIndex) return;
+
     MaterialColor slopeColor;
     if (slope != null) {
       if (slope > 7)
@@ -844,7 +848,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             height: 16.0,
           ),
           Expanded(
-            child: ListView.builder(
+            child: ListView.builder(padding: EdgeInsets.all(0),
                 itemCount: busRoutes.length, // records.length
                 itemBuilder: (BuildContext context, int i) {
                   return BusRouteDetails(

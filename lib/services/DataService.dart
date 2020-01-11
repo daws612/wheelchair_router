@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:routing/models/BusRoutesJSON.dart';
@@ -63,7 +61,8 @@ class DataService {
 
         if (routesJSON.isNotEmpty) {
           print("Routes received :: " + routesJSON.length.toString());
-          busRoutes = routesJSON.map((i) => RoutesJSON.fromJson(i)).toList();
+          int index = 0;
+          busRoutes = routesJSON.map((i) => RoutesJSON.fromJson(i, index++)).toList();
         }
       } else {
         print("No bus routes found");
