@@ -30,7 +30,7 @@ async function getElevation(originHttp, destinationHttp) {
             password: config.schema.password,
             database: config.schema.db
         });
-        var result = {polyline: "", pathData: ""};
+        var result = {polyline: "", pathData: "", distance: "", duration: ""};
 
         try {
 
@@ -40,12 +40,21 @@ async function getElevation(originHttp, destinationHttp) {
             var polyline = JSON.parse(polyResults);
             if (polyline.routes.length === 0)
                 resolve(result);
+            var legs = polyline.routes[0].legs;
             polyline = polyline.routes[0].overview_polyline.points;
 
             //get the route from origin to destination
             //var polyline = await getPath.fetchPolylinePath(originHttp, destinationHttp);
             if (!polyline)
                 res.send({ error: "No polyline found" });
+
+            //Calculate distance and duration in all legs of route
+            var distance = 0;
+            var duration = 0;
+            for(var lg=0; lg<legs.length; lg++) {
+                distance += legs[lg].distance.value;
+                duration += legs[lg].duration.value;
+            }
 
             //decode the polyline to get the points on the route
             var path = decode(polyline);
@@ -72,6 +81,8 @@ async function getElevation(originHttp, destinationHttp) {
 
             result.polyline = polyline;
             result.pathData = pathData;
+            result.distance = distance;
+            result.duration = duration;
 
             //result.push({ polyline, pathData });
 

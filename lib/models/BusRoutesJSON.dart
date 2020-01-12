@@ -84,15 +84,21 @@ class PolylineJSON {
 }
 
 class WalkPathJSON {
-  List<PolylineJSON> pathData;
+  final List<PolylineJSON> pathData;
+  final int distanceM;
+  final int durationSec;
+  final StopsJSON stop;
 
-  WalkPathJSON({this.pathData});
+  WalkPathJSON({this.pathData, this.distanceM, this.durationSec, this.stop});
 
   factory WalkPathJSON.fromJson(Map<String, dynamic> json) {
     var list = json['pathData'] as List;
     int index= 0;
     return new WalkPathJSON(
       pathData: list.map((i) => PolylineJSON.fromJson(i, index)).toList(),
+      distanceM: json['distance'],
+      durationSec: json['duration'],
+      stop: StopsJSON.fromJson(json['stopData'])
     );
   }
 }

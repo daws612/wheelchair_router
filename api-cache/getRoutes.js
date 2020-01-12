@@ -102,7 +102,8 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
         "a.stop_id = ? " +
         "and b.stop_id = ? " +
         "and a.trip_id = b.trip_id " +
-        "and a.departure_time between '07:00' and TIME(DATE_ADD('2019-01-07 07:00', INTERVAL 15 MINUTE)) " +
+        //"and a.departure_time between '07:00' and TIME(DATE_ADD('2019-01-07 07:00', INTERVAL 15 MINUTE)) " +
+        "and a.departure_time between current_time() and TIME(DATE_ADD(now(), INTERVAL 15 MINUTE)) " +
         "and t.service_id = (case  " +
         "when dayofweek(current_date()) between 2 and 6 then 1 " +
         "when dayofweek(current_date()) = 1 then 3 " +
@@ -157,12 +158,14 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
                 var firstStop = routeStops[0].stop_lat + "," + routeStops[0].stop_lon;
 
                 var tofirstStop = await getElevation.getElevation(originHttp, firstStop);
+                tofirstStop['stopData'] = routeStops[0];
                 routes[k]["toFirstStop"] = tofirstStop;
 
 
                 var lastStop = routeStops[routeStops.length - 1].stop_lat + "," + routeStops[routeStops.length - 1].stop_lon;
 
                 var fromLastStop = await getElevation.getElevation(lastStop, destinationHttp);
+                fromLastStop['stopData'] = routeStops[routeStops.length - 1];
                 routes[k]["fromLastStop"] = fromLastStop;
             }
         } //for routes
