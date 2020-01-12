@@ -1,4 +1,5 @@
 import 'package:charts_flutter/flutter.dart';
+import 'package:duration/duration.dart';
 import 'package:flutter/material.dart';
 import 'package:routing/models/BusRoutesJSON.dart';
 
@@ -62,30 +63,72 @@ class BusRouteDetails extends StatelessWidget {
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
                                         children: <Widget>[
                                           Text(
-                                            "Route: "  + route.routeShortName + " - " + route.routeLongName,
+                                            "Route: " +
+                                                route.routeShortName +
+                                                " - " +
+                                                route.routeLongName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            "To " + route.toFirstStop.stop.stopName + ": " +
+                                                _printDistance(route.toFirstStop.distanceM)
+                                                    .toString() +
+                                                " in " + printDuration(Duration(
+                                                    seconds: route.toFirstStop
+                                                        .durationSec), abbreviated: true),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            "Bus Time From: " +
+                                                route.departureTime +
+                                                " to " +
+                                                route.arrivalTime,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            "From " + route.fromLastStop.stop.stopName + ": " +
+                                                _printDistance(route.fromLastStop.distanceM)
+                                                    .toString() +
+                                                " in " +
+                                                printDuration(Duration(
+                                                    seconds: route.fromLastStop
+                                                        .durationSec), abbreviated: true),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       ),
                                     ),
-                                    Expanded(
-                                        flex: 10,
-                                        child: LineChart(
-                                          data,
-                                          animate: true,
-                                          animationDuration:
-                                              Duration(seconds: 2),
-                                          behaviors: <ChartBehavior> [
-                                            
-                                          ],
-                                        )),
+                                    // Expanded(
+                                    //     flex: 10,
+                                    //     child: LineChart(
+                                    //       data,
+                                    //       animate: true,
+                                    //       animationDuration:
+                                    //           Duration(seconds: 2),
+                                    //       behaviors: <ChartBehavior> [
+
+                                    //       ],
+                                    //     )),
                                   ],
                                 )),
                           )
                         ])))));
+  }
+
+  String _printDistance(int distanceMeters) {
+    if(distanceMeters < 1000)
+      return distanceMeters.toString() + "m";
+    else{
+      double km = distanceMeters/1000;
+      return km.toString() + "km";
+    }
   }
 }

@@ -36,7 +36,8 @@ class DataService {
     return stops;
   }
 
-  Future<List<RoutesJSON>> fetchRoutes(LatLng origin, LatLng destination) async {
+  Future<List<RoutesJSON>> fetchRoutes(
+      LatLng origin, LatLng destination) async {
     String params = "?originlat=" +
         origin.latitude.toString() +
         '&originlon=' +
@@ -49,7 +50,7 @@ class DataService {
     //https://missfarukh.com/server_functions/getRoutes.php?originlat=40.76012279512181&originlon=29.922576919198036&destlat=40.824600&destlon=29.919007
     //http://192.168.43.238:9595/getbusroutes?originlat=40.8191533&originlon=29.923916099999985&destlat=40.7656144&destlon=29.925500199999988
     var url = 'http://192.168.43.238:9595/getbusroutes$params';
-              
+
     print("Fetching routes from - " + url);
 
     List<dynamic> routesJSON;
@@ -62,7 +63,8 @@ class DataService {
         if (routesJSON.isNotEmpty) {
           print("Routes received :: " + routesJSON.length.toString());
           int index = 0;
-          busRoutes = routesJSON.map((i) => RoutesJSON.fromJson(i, index++)).toList();
+          busRoutes =
+              routesJSON.map((i) => RoutesJSON.fromJson(i, index++)).toList();
         }
       } else {
         print("No bus routes found");

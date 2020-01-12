@@ -555,7 +555,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // non-existent appearance.
     if (!mounted) return;
 
-    if (routes.isNotEmpty) _panelController.show();
+    if (routes.isNotEmpty && !_panelController.isPanelShown()) _panelController.show();
     setState(() {
       _isLoading = false;
     });
@@ -748,7 +748,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       }); //finish path to first stop
     });
     if (!mounted) return;
-    if (busRoutes.isNotEmpty) _panelController.show();
+    if (busRoutes.isNotEmpty && !_panelController.isPanelShown()) _panelController.show();
     setState(() {
       _isLoading = false;
     });
