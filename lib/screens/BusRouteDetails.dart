@@ -1,14 +1,14 @@
 import 'package:charts_flutter/flutter.dart';
 import 'package:duration/duration.dart';
 import 'package:flutter/material.dart';
-import 'package:routing/models/BusRoutesJSON.dart';
+import 'package:routing/models/AllRoutesJSON.dart';
 
 class BusRouteDetails extends StatelessWidget {
   BusRouteDetails(
       {Key key, this.route, this.index, this.radioValue, this.onClicked})
       : super(key: key);
 
-  final RoutesJSON route;
+  final BusRoutesJSON route;
   final int index;
   final int radioValue;
   final VoidCallback onClicked;
@@ -21,7 +21,7 @@ class BusRouteDetails extends StatelessWidget {
         colorFn: (_, __) => MaterialPalette.blue.shadeDefault,
         domainFn: (PolylineJSON line, _) => line.pathIndex,
         measureFn: (PolylineJSON line, _) => line.slope,
-        data: route.toFirstStop.pathData,
+        data: route.toFirstStop[0].pathData,
       )
     ];
 
@@ -75,11 +75,11 @@ class BusRouteDetails extends StatelessWidget {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           Text(
-                                            "To " + route.toFirstStop.stop.stopName + ": " +
-                                                _printDistance(route.toFirstStop.distanceM)
+                                            "To " + route.stops[0].stopName + ": " +
+                                                _printDistance(route.toFirstStop[0].distanceM)
                                                     .toString() +
                                                 " in " + printDuration(Duration(
-                                                    seconds: route.toFirstStop
+                                                    seconds: route.toFirstStop[0]
                                                         .durationSec), abbreviated: true),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -93,12 +93,12 @@ class BusRouteDetails extends StatelessWidget {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           Text(
-                                            "From " + route.fromLastStop.stop.stopName + ": " +
-                                                _printDistance(route.fromLastStop.distanceM)
+                                            "From " + route.stops[route.stops.length-1].stopName + ": " +
+                                                _printDistance(route.fromLastStop[0].distanceM)
                                                     .toString() +
                                                 " in " +
                                                 printDuration(Duration(
-                                                    seconds: route.fromLastStop
+                                                    seconds: route.fromLastStop[0]
                                                         .durationSec), abbreviated: true),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,

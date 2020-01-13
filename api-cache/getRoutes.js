@@ -3,7 +3,40 @@ const commons = require('./commons');
 const util = require('util');
 const getElevation = require('./getElevation');
 
-async function getBusRoutes(req, res, next) {
+async function performRouting(req, res, next) {
+    var response = {busRoutes: "", walkingDirections: ""};
+
+    try{
+
+        var params = req.query;
+        var originlat = params.originlat;
+        var originlon = params.originlon;
+        var destlat = params.destlat;
+        var destlon = params.destlon;
+        var originHttp = originlat + "," + originlon;
+        var destinationHttp = destlat + "," + destlon;
+
+        var walkingDirections = await getWalkingRoutes(originHttp, destinationHttp);
+        var busRoutes = await getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp);
+
+        response.walkingDirections = walkingDirections;
+        response.busRoutes = busRoutes;
+
+        res.send(response);
+    }catch (ex) {
+        console.error('Unexpected exception occurred when trying to get directions \n' + ex);
+        res.send(ex);
+    } 
+
+}
+
+async function getWalkingRoutes(origin, destination) {
+    console.log("Get walking route of whole path.");
+    var walkingDirections = await getElevation.getWalkingDirections(origin, destination, true);
+    return walkingDirections;
+}
+
+async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp) {
 
     const db = commons.makeDb({
         host: config.schema.host,
@@ -14,14 +47,6 @@ async function getBusRoutes(req, res, next) {
     var result = [];
 
     try {
-
-        var params = req.query;
-        var originlat = params.originlat;
-        var originlon = params.originlon;
-        var destlat = params.destlat;
-        var destlon = params.destlon;
-        var originHttp = originlat + "," + originlon;
-        var destinationHttp = destlat + "," + destlon;
 
         var nearestStopQuery = "SELECT *, 'destination' as stoptype, " +
             "ST_Distance_Sphere( " +
@@ -49,11 +74,13 @@ async function getBusRoutes(req, res, next) {
             }
         }
 
-        res.send(result);
+        console.log('\nSuccessfully complete routing request');
+        console.log('*************************************************************************');
+        return result;
 
     } catch (ex) {
         console.error('Unexpected exception occurred when trying to get directions \n' + ex);
-        res.send(ex);
+        throw ex;
     } finally {
         await db.close();
     }
@@ -127,11 +154,12 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
                 "left join stop_times st on st.stop_id = s.stop_id " +
                 "WHERE st.stop_id = ? and trip_id = ?) " +
                 "ORDER BY stop_sequence asc";
-                //howcan this query be made to include the origin and destination stops?
+            //howcan this query be made to include the origin and destination stops?
             var routeStops = await db.query(routeStopsQuery, [tripId, stop1, tripId, stop2, tripId]);
             routes[k]['stops'] = routeStops;
+            console.log("Route index: " + k + " -- Number of stops found: " + routeStops.length);
 
-            if(routes[k].stops.length < 1) {
+            if (routes[k].stops.length < 1) {
                 routes.splice(k, 1); //remove kth element
                 k--;
                 continue;
@@ -141,8 +169,9 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
             for (var l = 0; l < routeStops.length - 1; l++) {
                 var originStop = routeStops[l].stop_lat + "," + routeStops[l].stop_lon;
                 var destStop = routeStops[l + 1].stop_lat + "," + routeStops[l + 1].stop_lon;
+                console.log("Get polyline from stop " + l + " to " + (l + 1));
 
-                var googleUrl = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=driving&key=%s', originStop, destStop, config.google.apikey);
+                var googleUrl = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=driving&alternatives=true&key=%s', originStop, destStop, config.google.apikey);
                 var polylineResult = await commons.fetchDataFromCache(originStop, destStop, "polyline_path", "polyline_json", googleUrl, "driving");
                 var polyline = JSON.parse(polylineResult);
                 polyline = polyline.routes[0].overview_polyline.points;
@@ -153,19 +182,17 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
             }
             routes[k]['polylines'] = routePolylines;
 
-
-            if (routeStops.length > 0) {
+            //if stops are more than 1
+            if (routeStops.length > 1) {
                 var firstStop = routeStops[0].stop_lat + "," + routeStops[0].stop_lon;
-
-                var tofirstStop = await getElevation.getElevation(originHttp, firstStop);
-                tofirstStop['stopData'] = routeStops[0];
+                console.log("Get walking route to first stop: " + routeStops[0].stop_name);
+                var tofirstStop = await getElevation.getWalkingDirections(originHttp, firstStop, true);
                 routes[k]["toFirstStop"] = tofirstStop;
 
 
                 var lastStop = routeStops[routeStops.length - 1].stop_lat + "," + routeStops[routeStops.length - 1].stop_lon;
-
-                var fromLastStop = await getElevation.getElevation(lastStop, destinationHttp);
-                fromLastStop['stopData'] = routeStops[routeStops.length - 1];
+                console.log("Get walking route from last stop: " + routeStops[routeStops.length - 1].stop_name);
+                var fromLastStop = await getElevation.getWalkingDirections(lastStop, destinationHttp, true);
                 routes[k]["fromLastStop"] = fromLastStop;
             }
         } //for routes
@@ -176,4 +203,4 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
     return result;
 }
 
-module.exports.getBusRoutes = getBusRoutes
+module.exports.performRouting = performRouting

@@ -12,7 +12,7 @@ var server = restify.createServer();
 //server.use(restify.plugins.bodyParser()); //---Used for post
 server.use(restify.plugins.queryParser());
 server.get('/getpath', getPath.httpFetchPolylinePath);
-server.get('/getbusroutes', getRoutes.getBusRoutes);
+server.get('/getbusroutes', getRoutes.performRouting);
 server.get('/getbusstops', getStops.getBusStops);
 server.get('/getelevation', getElevation.httpGetElevation);
 

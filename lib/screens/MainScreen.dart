@@ -6,7 +6,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:routing/models/BusRoutesJSON.dart' as BusRoutes;
+import 'package:routing/models/AllRoutesJSON.dart' as AllRoutes;
 import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/RoutesJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
@@ -17,8 +17,7 @@ import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-
-import 'BusRouteDetails.dart';
+import 'RouteDetails.dart';
 
 const kGoogleApiKey = "AIzaSyBUOmQEmER7vOSpaf0UvwYSwzQmhG2hcTs";
 DirectionsAPI.GoogleMapsDirections directions =
@@ -46,7 +45,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Map<PolylineId, Polyline> polylines = {};
   List<RoutesJSON> routes = [];
-  List<BusRoutes.RoutesJSON> busRoutes = [];
+  AllRoutes.AllRoutesJSON allRoutes;
   int selectedRoute = 0;
 
   String _progressText = 'Loading';
@@ -163,14 +162,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     return Scaffold(
       key: _scaffoldKey,
       body: Stack(alignment: Alignment.topCenter, children: <Widget>[
-        SlidingUpPanel(
-          //color: Theme.of(context).primaryColor.withOpacity(0.5),
-          controller: _panelController,
-          maxHeight: _panelHeightOpen,
-          minHeight: _panelHeightClosed,
-          parallaxEnabled: true,
-          parallaxOffset: .5,
-          body: GoogleMap(
+        GoogleMap(
             onMapCreated: _onMapCreated,
             onCameraIdle: _onCameraIdle,
             initialCameraPosition: CameraPosition(target: _center, zoom: 15),
@@ -183,14 +175,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             ),
             mapType: MapType.normal,
           ),
-          panel: _busRoutesPanel(), //_googleWalkingDirectionsPanel(),
-          borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(18.0), topRight: Radius.circular(18.0)),
-          onPanelSlide: (double pos) => setState(() {
-            _fabHeight =
-                pos * (_panelHeightOpen - _panelHeightClosed) + _initFabHeight;
-          }),
-        ),
         showOriginTextField(),
         Positioned(
             // To take AppBar Size only
@@ -231,6 +215,24 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         showCircularProgress(),
         showGetDirectionsButton(),
         toggleStopsButton(),
+        SlidingUpPanel(
+          //color: Theme.of(context).primaryColor.withOpacity(0.5),
+          controller: _panelController,
+          maxHeight: MediaQuery.of(context).size.height,
+          minHeight: _panelHeightClosed,
+          parallaxEnabled: true,
+          parallaxOffset: .5,
+          panelSnapping: false,
+          body: Container(),
+          panel: _busRoutesPanel(), //_googleWalkingDirectionsPanel(),
+          //color: Colors.white70,
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(18.0), topRight: Radius.circular(18.0)),
+          onPanelSlide: (double pos) => setState(() {
+            _fabHeight =
+                pos * (_panelHeightOpen - _panelHeightClosed) + _initFabHeight;
+          }),
+        ),
       ]),
     );
   }
@@ -390,7 +392,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget showGetDirectionsButton() {
-    if (!(routes.isNotEmpty || busRoutes.isNotEmpty) && _destinationSet) {
+    if (!(routes.isNotEmpty || allRoutes != null) && _destinationSet) {
       return new Stack(
         children: [
           Align(
@@ -516,7 +518,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _markers.remove('Origin');
     _markers.remove('Destination');
     routes.clear();
-    busRoutes.clear();
+    allRoutes = null;
     polylines.clear();
     if (_panelController.isPanelShown()) _panelController.hide();
     selectedRoute = 0;
@@ -525,7 +527,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   _resetMap() {
     routes.clear();
-    busRoutes.clear();
+    allRoutes = null;
     polylines.clear();
     if (_panelController.isPanelShown()) _panelController.hide();
     selectedRoute = 0;
@@ -685,7 +687,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   _getBusRoutes(LatLng origin, LatLng destination) async {
     //https://stackoverflow.com/questions/13407468/how-can-i-list-all-the-stops-associated-with-a-route-using-gtfs
-    busRoutes = await DataService().fetchRoutes(origin, destination);
+    allRoutes = await DataService().fetchRoutes(origin, destination);
     _controller.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -694,14 +696,16 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ),
       ),
     );
-    _renderBusRoute(busRoutes);
+
+    if(allRoutes != null)
+    _renderBusRoute(allRoutes.busRoutes);
   }
 
-  _renderBusRoute(List<BusRoutes.RoutesJSON> routes) {
+  _renderBusRoute(List<AllRoutes.BusRoutesJSON> routes) {
     polylines.clear();
     List<LatLng> polylineCoordinates = [];
 
-    busRoutes.forEach((BusRoutes.RoutesJSON route) {
+    routes.forEach((AllRoutes.BusRoutesJSON route) {
       if (route == null) return;
 
       int index = 0;
@@ -725,7 +729,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       //plot from current location to first bus stop
       index = 0;
-      route.toFirstStop.pathData.forEach((BusRoutes.PolylineJSON elevation) {
+      route.toFirstStop[0].pathData.forEach((AllRoutes.PolylineJSON elevation) {
         polylineCoordinates = [];
         elevation.location.forEach((LocationJSON coords) {
           polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
@@ -737,7 +741,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       //plot from current location to first bus stop
       index = 0;
-      route.fromLastStop.pathData.forEach((BusRoutes.PolylineJSON elevation) {
+      route.fromLastStop[0].pathData.forEach((AllRoutes.PolylineJSON elevation) {
         polylineCoordinates = [];
         elevation.location.forEach((LocationJSON coords) {
           polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
@@ -748,7 +752,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       }); //finish path to first stop
     });
     if (!mounted) return;
-    if (busRoutes.isNotEmpty && !_panelController.isPanelShown()) _panelController.show();
+    if (allRoutes != null && (allRoutes.busRoutes.isNotEmpty || allRoutes.walkingDirections.isNotEmpty) && !_panelController.isPanelShown()) _panelController.show();
     setState(() {
       _isLoading = false;
     });
@@ -785,7 +789,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget _busRoutesPanel() {
-    if (busRoutes.isNotEmpty) {
+    if (allRoutes != null && (allRoutes.busRoutes.isNotEmpty)) {
       return Column(
         children: <Widget>[
           SizedBox(
@@ -848,20 +852,16 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             height: 16.0,
           ),
           Expanded(
-            child: ListView.builder(padding: EdgeInsets.all(0),
-                itemCount: busRoutes.length, // records.length
-                itemBuilder: (BuildContext context, int i) {
-                  return BusRouteDetails(
-                    route: busRoutes[i],
-                    index: i,
+            child: RouteDetails(
+                    allRoutes: allRoutes,
+                    //index: i,
                     radioValue: selectedRoute,
                     onClicked: () {
-                      selectedRoute = i;
-                      _renderBusRoute(busRoutes);
+                      //selectedRoute = i;
+                      _renderBusRoute(allRoutes.busRoutes);
                       setState(() {});
                     },
-                  );
-                }),
+                  )
           ),
         ],
       );
