@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:routing/models/BusRoutesJSON.dart';
+import 'package:routing/models/AllRoutesJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
 
 class DataService {
@@ -36,7 +36,7 @@ class DataService {
     return stops;
   }
 
-  Future<List<RoutesJSON>> fetchRoutes(
+  Future<AllRoutesJSON> fetchRoutes(
       LatLng origin, LatLng destination) async {
     String params = "?originlat=" +
         origin.latitude.toString() +
@@ -53,8 +53,8 @@ class DataService {
 
     print("Fetching routes from - " + url);
 
-    List<dynamic> routesJSON;
-    List<RoutesJSON> busRoutes = [];
+    Map<String, dynamic> routesJSON;
+    AllRoutesJSON allRoutes;
     try {
       Response response = await Dio().get(url);
       if (response.statusCode == 200) {
@@ -62,9 +62,7 @@ class DataService {
 
         if (routesJSON.isNotEmpty) {
           print("Routes received :: " + routesJSON.length.toString());
-          int index = 0;
-          busRoutes =
-              routesJSON.map((i) => RoutesJSON.fromJson(i, index++)).toList();
+          allRoutes = AllRoutesJSON.fromJson(routesJSON);
         }
       } else {
         print("No bus routes found");
@@ -72,6 +70,6 @@ class DataService {
     } catch (exception) {
       print(exception);
     }
-    return busRoutes;
+    return allRoutes;
   }
 }
