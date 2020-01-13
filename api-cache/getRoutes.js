@@ -159,7 +159,7 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
             routes[k]['stops'] = routeStops;
             console.log("Route index: " + k + " -- Number of stops found: " + routeStops.length);
 
-            if (routes[k].stops.length < 1) {
+            if (routes[k].stops.length < 2) {
                 routes.splice(k, 1); //remove kth element
                 k--;
                 continue;

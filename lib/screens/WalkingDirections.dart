@@ -1,35 +1,24 @@
-import 'package:charts_flutter/flutter.dart';
 import 'package:duration/duration.dart';
 import 'package:flutter/material.dart';
 import 'package:routing/models/AllRoutesJSON.dart';
 
-class BusRouteDetails extends StatelessWidget {
-  BusRouteDetails({Key key, this.route, this.radioValue, this.onClicked})
+class WalkingDirections extends StatelessWidget {
+  WalkingDirections({Key key, this.route, this.radioValue, this.onClicked})
       : super(key: key);
 
-  final BusRoutesJSON route;
+  final WalkPathJSON route;
   final int radioValue;
   final Function(int) onClicked;
 
   @override
   Widget build(BuildContext context) {
-    List<Series<PolylineJSON, int>> data = [
-      new Series<PolylineJSON, int>(
-        id: 'Slope',
-        colorFn: (_, __) => MaterialPalette.blue.shadeDefault,
-        domainFn: (PolylineJSON line, _) => line.pathIndex,
-        measureFn: (PolylineJSON line, _) => line.slope,
-        data: route.toFirstStop[0].pathData,
-      )
-    ];
-
     return Card(
         child: InkWell(
             onTap: () => onClicked(route.routeIndex),
             child: Padding(
                 padding: const EdgeInsets.all(0),
                 child: SizedBox(
-                    height: 200,
+                    height: 100,
                     child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
@@ -65,57 +54,16 @@ class BusRouteDetails extends StatelessWidget {
                                             MainAxisAlignment.spaceEvenly,
                                         children: <Widget>[
                                           Text(
-                                            "Route: " +
-                                                route.routeShortName +
-                                                " - " +
-                                                route.routeLongName,
+                                            "Route total distance " +
+                                                _printDistance(route.distanceM),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           Text(
-                                            "To " +
-                                                route.stops[0].stopName +
-                                                ": " +
-                                                _printDistance(route
-                                                        .toFirstStop[0]
-                                                        .distanceM)
-                                                    .toString() +
-                                                " in " +
-                                                printDuration(
-                                                    Duration(
-                                                        seconds: route
-                                                            .toFirstStop[0]
-                                                            .durationSec),
-                                                    abbreviated: true),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            "Bus Time From: " +
-                                                route.departureTime +
-                                                " to " +
-                                                route.arrivalTime,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            "From " +
-                                                route
-                                                    .stops[
-                                                        route.stops.length - 1]
-                                                    .stopName +
-                                                ": " +
-                                                _printDistance(route
-                                                        .fromLastStop[0]
-                                                        .distanceM)
-                                                    .toString() +
-                                                " in " +
-                                                printDuration(
-                                                    Duration(
-                                                        seconds: route
-                                                            .fromLastStop[0]
-                                                            .durationSec),
-                                                    abbreviated: true),
+                                            "Route total duration " +
+                                                printDuration(Duration(
+                                                    seconds:
+                                                        route.durationSec)),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),

@@ -163,18 +163,18 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       key: _scaffoldKey,
       body: Stack(alignment: Alignment.topCenter, children: <Widget>[
         GoogleMap(
-            onMapCreated: _onMapCreated,
-            onCameraIdle: _onCameraIdle,
-            initialCameraPosition: CameraPosition(target: _center, zoom: 15),
-            markers: _markers.values.toSet(),
-            polylines: Set<Polyline>.of(polylines.values),
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
-            padding: EdgeInsets.only(
-              top: _destinationSet ? 170 : 100.0,
-            ),
-            mapType: MapType.normal,
+          onMapCreated: _onMapCreated,
+          onCameraIdle: _onCameraIdle,
+          initialCameraPosition: CameraPosition(target: _center, zoom: 15),
+          markers: _markers.values.toSet(),
+          polylines: Set<Polyline>.of(polylines.values),
+          myLocationEnabled: true,
+          myLocationButtonEnabled: true,
+          padding: EdgeInsets.only(
+            top: _destinationSet ? 170 : 100.0,
           ),
+          mapType: MapType.normal,
+        ),
         showOriginTextField(),
         Positioned(
             // To take AppBar Size only
@@ -557,7 +557,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // non-existent appearance.
     if (!mounted) return;
 
-    if (routes.isNotEmpty && !_panelController.isPanelShown()) _panelController.show();
+    if (routes.isNotEmpty && !_panelController.isPanelShown())
+      _panelController.show();
     setState(() {
       _isLoading = false;
     });
@@ -605,7 +606,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         polylineCoordinates.add(
             LatLng(point.destination.latitude, point.destination.longitude));
         _addPolyLine("poly-" + index.toString(), polylineCoordinates,
-            point.slope, route.routeIndex);
+            point.slope, route.routeIndex, true);
       });
     });
   }
@@ -697,71 +698,70 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       ),
     );
 
-    if(allRoutes != null)
-    _renderBusRoute(allRoutes.busRoutes);
+    if (allRoutes != null) _renderRoutes();
   }
 
-  _renderBusRoute(List<AllRoutes.BusRoutesJSON> routes) {
-    polylines.clear();
+  _renderBusRoute(AllRoutes.BusRoutesJSON route) {
     List<LatLng> polylineCoordinates = [];
 
-    routes.forEach((AllRoutes.BusRoutesJSON route) {
-      if (route == null) return;
+    int index = 0;
+    route.polylines.forEach((String line) {
+      if (line == null) return;
 
-      int index = 0;
-      route.polylines.forEach((String line) {
-        if (line == null) return;
+      List<PointLatLng> result = PolylinePoints().decodePolyline(line);
+      polylineCoordinates = [];
 
-        List<PointLatLng> result = PolylinePoints().decodePolyline(line);
-        polylineCoordinates = [];
+      if (result.isNotEmpty) {
+        result.forEach((PointLatLng point) {
+          polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+        });
 
-        if (result.isNotEmpty) {
-          result.forEach((PointLatLng point) {
-            polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-          });
+        _addPolyLine(route.tripId + "-" + index.toString(), polylineCoordinates,
+            null, route.routeIndex, true);
+      }
 
-          _addPolyLine(route.tripId + "-" + index.toString(),
-              polylineCoordinates, null, route.routeIndex);
-        }
+      index++;
+    }); //finish bus route polylines
 
-        index++;
-      }); //finish bus route polylines
-
-      //plot from current location to first bus stop
+    //plot from current location to first bus stop
+    route.toFirstStop.forEach((AllRoutes.WalkPathJSON walkRoute) {
       index = 0;
-      route.toFirstStop[0].pathData.forEach((AllRoutes.PolylineJSON elevation) {
+      walkRoute.pathData.forEach((AllRoutes.PolylineJSON elevation) {
         polylineCoordinates = [];
         elevation.location.forEach((LocationJSON coords) {
           polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
         });
-        _addPolyLine(route.tripId + "-toFirstStop-" + index.toString(),
-            polylineCoordinates, elevation.slope, route.routeIndex);
+        _addPolyLine(
+            walkRoute.routeIndex.toString() + "-toFirstStop-" + index.toString(),
+            polylineCoordinates,
+            elevation.slope,
+            route.routeIndex,
+            walkRoute.routeIndex == 0 ? true : false);
         index++;
-      }); //finish path to first stop
+      });
+    }); //finish path to first stop
 
-      //plot from current location to first bus stop
+    //plot from current location to first bus stop
+    route.fromLastStop.forEach((AllRoutes.WalkPathJSON walkRoute) {
       index = 0;
-      route.fromLastStop[0].pathData.forEach((AllRoutes.PolylineJSON elevation) {
+      walkRoute.pathData.forEach((AllRoutes.PolylineJSON elevation) {
         polylineCoordinates = [];
         elevation.location.forEach((LocationJSON coords) {
           polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
         });
-        _addPolyLine(route.tripId + "-fromLastStop-" + index.toString(),
-            polylineCoordinates, elevation.slope, route.routeIndex);
+        _addPolyLine(
+            walkRoute.routeIndex.toString() + "-fromLastStop-" + index.toString(),
+            polylineCoordinates,
+            elevation.slope,
+            route.routeIndex,
+            walkRoute.routeIndex == 0 ? true : false);
         index++;
-      }); //finish path to first stop
-    });
-    if (!mounted) return;
-    if (allRoutes != null && (allRoutes.busRoutes.isNotEmpty || allRoutes.walkingDirections.isNotEmpty) && !_panelController.isPanelShown()) _panelController.show();
-    setState(() {
-      _isLoading = false;
-    });
+      });
+    }); //finish path to first stop
   }
 
   _addPolyLine(String polyId, List<LatLng> polylineCoordinates, double slope,
-      int routeIndex) {
-    if (routeIndex != null && selectedRoute != routeIndex) return;
-
+      int routeIndex, bool highlightRoute) {
     MaterialColor slopeColor;
     if (slope != null) {
       if (slope > 7)
@@ -776,7 +776,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     PolylineId id = PolylineId(polyId);
     Polyline polyline = Polyline(
       polylineId: id,
-      color: slopeColor,
+      color: highlightRoute ? slopeColor : slopeColor.withOpacity(0.3),
       points: polylineCoordinates,
       width: 2,
       geodesic: true,
@@ -786,6 +786,56 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
     polylines[id] = polyline;
     setState(() {});
+  }
+
+  _renderWalkRoute(AllRoutes.WalkPathJSON route) {
+    List<LatLng> polylineCoordinates = [];
+
+    int index = 0;
+    route.pathData.forEach((AllRoutes.PolylineJSON line) {
+      if (line == null) return;
+
+      polylineCoordinates = [];
+      line.location.forEach((LocationJSON coords) {
+        polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
+      });
+      _addPolyLine(
+          route.routeIndex.toString() + "-walk-" + index.toString(),
+          polylineCoordinates,
+          line.slope,
+          route.routeIndex,
+          route.routeIndex == selectedRoute ? true : false);
+      index++;
+    });
+  }
+
+  _renderRoutes() {
+    polylines.clear();
+    bool clearWalkRoutes = true;
+    allRoutes.walkingDirections.forEach((AllRoutes.WalkPathJSON route) {
+        _renderWalkRoute(route);
+      if (route != null && selectedRoute == route.routeIndex) {
+        clearWalkRoutes = false; //selected route is walk route, dont clear
+      }
+    });
+
+    if (clearWalkRoutes) {
+      polylines.clear(); //if we are showing bus routes, dont show walk routes
+
+      allRoutes.busRoutes.forEach((AllRoutes.BusRoutesJSON route) {
+        if (route != null && selectedRoute == route.routeIndex)
+          _renderBusRoute(route);
+      });
+    }
+
+    if (!mounted) return;
+    if (allRoutes != null &&
+        (allRoutes.busRoutes.isNotEmpty ||
+            allRoutes.walkingDirections.isNotEmpty) &&
+        !_panelController.isPanelShown()) _panelController.show();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Widget _busRoutesPanel() {
@@ -852,17 +902,15 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             height: 16.0,
           ),
           Expanded(
-            child: RouteDetails(
-                    allRoutes: allRoutes,
-                    //index: i,
-                    radioValue: selectedRoute,
-                    onClicked: () {
-                      //selectedRoute = i;
-                      _renderBusRoute(allRoutes.busRoutes);
-                      setState(() {});
-                    },
-                  )
-          ),
+              child: RouteDetails(
+            allRoutes: allRoutes,
+            radioValue: selectedRoute,
+            onClicked: (value) {
+              selectedRoute = value;
+              _renderRoutes();
+              setState(() {});
+            },
+          )),
         ],
       );
     } else {
