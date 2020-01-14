@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/UserService.dart';
 import 'package:routing/screens/MainScreen.dart';
 
 void main() => runApp(MyApp());
@@ -11,6 +12,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    UserService.anonymousLogin();
     return MaterialApp(
       title: 'Wheelchair Router',
       theme: ThemeData(
