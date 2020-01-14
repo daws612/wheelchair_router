@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
@@ -10,6 +12,7 @@ import 'package:routing/models/AllRoutesJSON.dart' as AllRoutes;
 import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/RoutesJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
+import 'package:routing/models/User.dart';
 import 'package:routing/screens/PathDetails.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/screens/UserProfile.dart';
@@ -436,7 +439,13 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             color: showStops ? Colors.white : Colors.grey,
             child: Icon(Icons.settings),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfile()));
+              FirebaseAuth.instance.currentUser().then((onValue) {
+                Firestore.instance.collection('/users').document(onValue.uid).get()
+                .then((doc) {
+                    User user = User.fromDocument(doc);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfile(user: user,)));
+                });
+              });              
             },
           ),
         )
