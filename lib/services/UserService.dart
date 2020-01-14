@@ -16,6 +16,12 @@ class UserService {
     return user;
   }
 
+  static Future<FirebaseUser> currentUser() async {
+    return await FirebaseAuth.instance.currentUser().then((onValue) {
+      return onValue;
+    });
+  }
+
   static Future<bool> anonymousLogin() async {
     try {
       final FirebaseUser _anonUser = await _auth.signInAnonymously();
@@ -30,6 +36,7 @@ class UserService {
         );
       }      
       _firestore.collection('/users').document(_anonUser.uid).setData(dbUser.toJson());
+      return true;
     } catch(ex) {
       print (ex);
       return false;

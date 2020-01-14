@@ -12,6 +12,7 @@ import 'package:routing/models/RoutesJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
 import 'package:routing/screens/PathDetails.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
+import 'package:routing/screens/UserProfile.dart';
 import 'package:routing/services/DataService.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
@@ -215,6 +216,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         showCircularProgress(),
         showGetDirectionsButton(),
         toggleStopsButton(),
+        preferencesButton(),
         SlidingUpPanel(
           //color: Theme.of(context).primaryColor.withOpacity(0.5),
           controller: _panelController,
@@ -419,6 +421,26 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         width: 0,
         height: 0,
       );
+  }
+
+  Widget preferencesButton() {
+    return new Positioned(
+      top: _destinationSet ? 225.0 : 200.0,
+        right: 10.0,
+        width: 40,
+        child: SizedBox(
+          height: 40,
+          child: RaisedButton(
+            padding: EdgeInsets.all(0),
+            //shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+            color: showStops ? Colors.white : Colors.grey,
+            child: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfile()));
+            },
+          ),
+        )
+    );
   }
 
   Widget toggleStopsButton() {
