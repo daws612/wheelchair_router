@@ -22,6 +22,12 @@ class UserService {
     });
   }
 
+  static void updateUser(User user) {
+    _firestore.collection('/users').document(user.userId).updateData(
+      user.toJson()
+    );
+  }
+
   static Future<bool> anonymousLogin() async {
     try {
       final FirebaseUser _anonUser = await _auth.signInAnonymously();
@@ -31,7 +37,7 @@ class UserService {
       if (dbUser == null) {
         dbUser = User(
           age: 0,
-          gender: "X",
+          gender: "Unspecified",
           userId: _anonUser.uid,
         );
       }      
