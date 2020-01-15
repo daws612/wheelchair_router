@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","name":"Tracks","features":[{"type":"Feature","properties":{"Name":"track1","Remarks":"","Length":9.855421941388558},"geometry":{"type":"LineString","coordinates":[[29.92414278,40.81919478,432.2635498046875],[29.9241052,40.8191866,423.918701171875],[29.92413931,40.8191575,428.7188720703125],[29.92415635,40.81914203,431.14154052734375]]}}]}
