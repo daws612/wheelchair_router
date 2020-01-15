@@ -228,6 +228,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         showCircularProgress(),
         showGetDirectionsButton(),
         toggleStopsButton(),
+        toggleGeoJSONDataButton(),
         preferencesButton(),
         SlidingUpPanel(
           //color: Theme.of(context).primaryColor.withOpacity(0.5),
@@ -437,7 +438,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Widget preferencesButton() {
     return new Positioned(
-      top: _destinationSet ? 225.0 : 200.0,
+        top: _destinationSet ? 270.0 : 200.0,
         right: 10.0,
         width: 40,
         child: SizedBox(
@@ -446,19 +447,29 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             padding: EdgeInsets.all(0),
             //shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
             color: showStops ? Colors.white : Colors.grey,
-            child: Icon(Icons.settings),
+            child: Icon(
+              Icons.settings,
+              color: Colors.black54,
+            ),
             onPressed: () {
               FirebaseAuth.instance.currentUser().then((onValue) {
-                Firestore.instance.collection('/users').document(onValue.uid).get()
-                .then((doc) {
-                    User user = User.fromDocument(doc);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserProfile(user: user,)));
+                Firestore.instance
+                    .collection('/users')
+                    .document(onValue.uid)
+                    .get()
+                    .then((doc) {
+                  User user = User.fromDocument(doc);
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => UserProfile(
+                                user: user,
+                              )));
                 });
-              });              
+              });
             },
           ),
-        )
-    );
+        ));
   }
 
   Widget toggleStopsButton() {
@@ -478,7 +489,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               color: Colors.black54,
             ),
             onPressed: () {
-              showGeoJsonLines();
               showStops = !showStops;
               if (showStops)
                 getStopsWithinArea(null);
@@ -492,19 +502,24 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Widget toggleGeoJSONDataButton() {
     return new Positioned(
         //alignment: Alignment.bottomRight,
-        top: _destinationSet ? 225.0 : 155.0,
+        top: _destinationSet ? 315.0 : 245.0,
         right: 10.0,
         width: 40,
         child: SizedBox(
-            height: 40,
-            child: IconButton(
-                icon: Icon(Icons.link),
-                color: Colors.black54,
-                onPressed: () {
-                  showGeoJsonLines();
-                },
-              ),
-            ));
+          height: 40,
+          child: RaisedButton(
+            padding: EdgeInsets.all(0),
+            //shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+            color: showStops ? Colors.white : Colors.grey,
+            child: Icon(
+              Icons.link,
+              color: Colors.black54,
+            ),
+            onPressed: () {
+              showGeoJsonLines();
+            },
+          ),
+        ));
   }
 
   _navigateAndDisplaySelection(BuildContext context, bool origin) async {
