@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/RoutesJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
 import 'package:routing/models/User.dart';
+import 'package:routing/screens/ImageViewer.dart';
 import 'package:routing/screens/PathDetails.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
 import 'package:routing/screens/UserProfile.dart';
@@ -22,6 +24,9 @@ import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'RouteDetails.dart';
+import 'package:geojson/geojson.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:latlong/latlong.dart' as flutterLatLng;
 
 const kGoogleApiKey = "AIzaSyBUOmQEmER7vOSpaf0UvwYSwzQmhG2hcTs";
 DirectionsAPI.GoogleMapsDirections directions =
@@ -62,6 +67,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   BitmapDescriptor busStopIcon;
   bool showStops = true;
+
+  List<String> imageFileList = [];
+  bool showCarousel = false;
 
   @override
   void dispose() {
@@ -158,7 +166,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (_controller == null) return;
     LatLngBounds visibleRegion = await _controller.getVisibleRegion();
     //print("Camera Idle! VisibleRegion: " + visibleRegion.toString());
-    getStopsWithinArea(visibleRegion);
+    //getStopsWithinArea(visibleRegion);
   }
 
   @override
@@ -179,6 +187,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           ),
           mapType: MapType.normal,
         ),
+        showImageCarousel(),
         showOriginTextField(),
         Positioned(
             // To take AppBar Size only
@@ -469,6 +478,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               color: Colors.black54,
             ),
             onPressed: () {
+              showGeoJsonLines();
               showStops = !showStops;
               if (showStops)
                 getStopsWithinArea(null);
@@ -477,6 +487,24 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             },
           ),
         ));
+  }
+
+  Widget toggleGeoJSONDataButton() {
+    return new Positioned(
+        //alignment: Alignment.bottomRight,
+        top: _destinationSet ? 225.0 : 155.0,
+        right: 10.0,
+        width: 40,
+        child: SizedBox(
+            height: 40,
+            child: IconButton(
+                icon: Icon(Icons.link),
+                color: Colors.black54,
+                onPressed: () {
+                  showGeoJsonLines();
+                },
+              ),
+            ));
   }
 
   _navigateAndDisplaySelection(BuildContext context, bool origin) async {
@@ -763,7 +791,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
         });
         _addPolyLine(
-            walkRoute.routeIndex.toString() + "-toFirstStop-" + index.toString(),
+            walkRoute.routeIndex.toString() +
+                "-toFirstStop-" +
+                index.toString(),
             polylineCoordinates,
             elevation.slope,
             route.routeIndex,
@@ -781,7 +811,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           polylineCoordinates.add(LatLng(coords.latitude, coords.longitude));
         });
         _addPolyLine(
-            walkRoute.routeIndex.toString() + "-fromLastStop-" + index.toString(),
+            walkRoute.routeIndex.toString() +
+                "-fromLastStop-" +
+                index.toString(),
             polylineCoordinates,
             elevation.slope,
             route.routeIndex,
@@ -844,7 +876,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     polylines.clear();
     bool clearWalkRoutes = true;
     allRoutes.walkingDirections.forEach((AllRoutes.WalkPathJSON route) {
-        _renderWalkRoute(route);
+      _renderWalkRoute(route);
       if (route != null && selectedRoute == route.routeIndex) {
         clearWalkRoutes = false; //selected route is walk route, dont clear
       }
@@ -870,7 +902,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Widget _busRoutesPanel() {
-    if (allRoutes != null && (allRoutes.busRoutes.isNotEmpty)) {
+    if (allRoutes != null &&
+        (allRoutes.busRoutes.isNotEmpty ||
+            allRoutes.walkingDirections.isNotEmpty)) {
       return Column(
         children: <Widget>[
           SizedBox(
@@ -947,6 +981,109 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     } else {
       //_panelController.hide();
       return Container();
+    }
+  }
+
+  Future<void> processData(String fileName) async {
+    // data is from http://www.naturalearthdata.com
+    final data = await rootBundle.loadString(fileName);
+    final geojson = GeoJson();
+    int index = 0;
+    geojson.processedLines.listen((GeoJsonLine line) {
+      final color = Colors.black;
+      List<flutterLatLng.LatLng> latlngs = line.geoSerie.toLatLng();
+      List<LatLng> polylineCoords = [];
+      latlngs.forEach((flutterLatLng.LatLng p) {
+        polylineCoords.add(LatLng(p.latitude, p.longitude));
+      });
+
+      PolylineId id = PolylineId(fileName + index.toString());
+      Polyline pointLine = Polyline(
+          polylineId: id, width: 2, color: color, points: polylineCoords);
+      polylines[id] = pointLine;
+      index++;
+      setState(() {});
+    });
+
+    geojson.processedPoints.listen((GeoJsonPoint point) {
+      Marker m = Marker(
+          markerId: MarkerId(point.geoPoint.latitude.toString() +
+              "," +
+              point.geoPoint.longitude.toString()),
+          position: LatLng(point.geoPoint.latitude, point.geoPoint.longitude),
+          infoWindow: InfoWindow(title: index.toString()),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueYellow));
+      _markers[fileName + index.toString()] = m;
+      index++;
+      setState(() {});
+    });
+
+    geojson.processedFeatures.listen((GeoJsonFeature feature) {
+      if (feature.properties.length > 0 &&
+          feature.properties.containsKey("Photo")) {
+        imageFileList
+            .add("assets/Photos/" + feature.properties["Photo"].toString());
+        Marker m = Marker(
+            markerId: MarkerId(feature.geometry.geoPoint.latitude.toString() +
+                "," +
+                feature.geometry.geoPoint.longitude.toString()),
+            position: LatLng(feature.geometry.geoPoint.latitude,
+                feature.geometry.geoPoint.longitude),
+            infoWindow: InfoWindow(title: "photo"),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueYellow),
+            onTap: () {
+              showImageCarousel();
+              setState(() {
+                showCarousel = !showCarousel;
+              });
+            });
+        _markers[fileName + index.toString()] = m;
+        index++;
+        setState(() {});
+      }
+    });
+
+    geojson.endSignal.listen((_) => geojson.dispose());
+    geojson.parse(data, verbose: true);
+  }
+
+  void showGeoJsonLines() async {
+    //_toggleVisiblePolylines("geoline-");
+    polylines.clear();
+    imageFileList.clear();
+    await processData('assets/Project1_Obstacles.geojson');
+    await processData('assets/Project1_sidewalk.geojson');
+    await processData('assets/Project1_PHOTOS.geojson');
+    await processData('assets/Project1_TRACKS.geojson');
+  }
+
+  Future<void> _toggleVisiblePolylines(String polylineId) async {
+    polylines.forEach((key, value) {
+      String id = value.polylineId.value;
+      if (id.startsWith(polylineId)) {
+        setState(() {
+          polylines[key] = value.copyWith(visibleParam: !value.visible);
+        });
+      }
+    });
+  }
+
+  Widget showImageCarousel() {
+    if (imageFileList.length > 0 && showCarousel) {
+      return Positioned(
+          bottom: 10.0,
+          left: 20.0,
+          right: 20.0,
+          child: ImageViewer(
+            imgList: imageFileList,
+          ));
+    } else {
+      return Container(
+        width: 0,
+        height: 0,
+      );
     }
   }
 }
