@@ -446,7 +446,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           child: RaisedButton(
             padding: EdgeInsets.all(0),
             //shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-            color: showStops ? Colors.white : Colors.grey,
+            color: Colors.white,
             child: Icon(
               Icons.settings,
               color: Colors.black54,
@@ -510,7 +510,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           child: RaisedButton(
             padding: EdgeInsets.all(0),
             //shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-            color: showStops ? Colors.white : Colors.grey,
+            color: Colors.white,
             child: Icon(
               Icons.link,
               color: Colors.black54,
