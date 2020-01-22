@@ -9,7 +9,7 @@ async function httpFetchPolylinePath(req, res, next) {
         var destination = params.destination;
         var mode = params.mode;
         var googleUrl = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=%s&key=%s', origin, destination, mode, config.google.apikey);
-        var result = await commons.fetchDataFromCache(origin, destination, "polyline_path", "polyline_json", googleUrl, directionsMode);
+        var result = await commons.fetchDataFromCache(origin, destination, "polyline_path", "polyline_json", googleUrl, mode);
         res.send(JSON.parse(result));
     } catch (ex) {
         console.error('Unexpected exception occurred when trying to get directions \n' + ex);
