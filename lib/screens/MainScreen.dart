@@ -165,8 +165,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void _onCameraIdle() async {
     if (_controller == null) return;
     LatLngBounds visibleRegion = await _controller.getVisibleRegion();
-    //print("Camera Idle! VisibleRegion: " + visibleRegion.toString());
-    //getStopsWithinArea(visibleRegion);
+    print("Camera Idle! VisibleRegion: " + visibleRegion.toString());
+    getStopsWithinArea(visibleRegion);
   }
 
   @override
