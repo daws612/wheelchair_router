@@ -6,6 +6,7 @@ const getPath = require('./getPath');
 const getRoutes = require('./getRoutes');
 const getStops = require('./getStops');
 const getElevation = require('./getElevation');
+const pgRoute = require('./pgRoute');
 var logFileName = __dirname + '/api-cache.log';
 
 var server = restify.createServer();
@@ -15,6 +16,7 @@ server.get('/getpath', getPath.httpFetchPolylinePath);
 server.get('/getbusroutes', getRoutes.performRouting);
 server.get('/getbusstops', getStops.getBusStops);
 server.get('/getelevation', getElevation.httpGetElevation);
+server.get('/pgroute', pgRoute.pgRoute);
 
 //log to file
 var logFile = fs.createWriteStream(logFileName, { flags: 'a' });
