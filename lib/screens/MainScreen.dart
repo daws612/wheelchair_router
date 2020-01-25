@@ -1066,12 +1066,29 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void showGeoJsonLines() async {
     //_toggleVisiblePolylines("geoline-");
-    polylines.clear();
-    imageFileList.clear();
+     polylines.clear();
+     imageFileList.clear();
     await processData('assets/Project1_Obstacles.geojson');
     await processData('assets/Project1_sidewalk.geojson');
     await processData('assets/Project1_PHOTOS.geojson');
     await processData('assets/Project1_TRACKS.geojson');
+
+    AllRoutes.WalkPathJSON w = await DataService().fetchPGRoutes();
+    _renderWalkRoute(w);
+    
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+    });
+
+    _controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(w.pathData[0].location[0].latitude, w.pathData[0].location[0].longitude),
+          zoom: 15.0,
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleVisiblePolylines(String polylineId) async {
