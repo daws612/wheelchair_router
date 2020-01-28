@@ -51,12 +51,6 @@ async function getWalkingDirections(originHttp, destinationHttp, allOptions) {
 async function getElevation(originHttp, destinationHttp, route) {
     return new Promise(async (resolve, reject) => {
 
-        const db = commons.makeDb({
-            host: config.schema.host,
-            user: config.schema.user,
-            password: config.schema.password,
-            database: config.schema.db
-        });
         var result = { polyline: "", pathData: "", distance: "", duration: "" };
 
         try {
@@ -112,8 +106,6 @@ async function getElevation(originHttp, destinationHttp, route) {
         } catch (ex) {
             console.error('Unexpected exception occurred when trying to get elevation \n' + ex);
             return ex;
-        } finally {
-            await db.close();
         }
     });
 

@@ -9,6 +9,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:routing/Constants.dart';
 import 'package:routing/models/AllRoutesJSON.dart' as AllRoutes;
 import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/RoutesJSON.dart';
@@ -28,9 +29,9 @@ import 'package:geojson/geojson.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:latlong/latlong.dart' as flutterLatLng;
 
-const kGoogleApiKey = "AIzaSyBUOmQEmER7vOSpaf0UvwYSwzQmhG2hcTs";
+
 DirectionsAPI.GoogleMapsDirections directions =
-    DirectionsAPI.GoogleMapsDirections(apiKey: kGoogleApiKey);
+    DirectionsAPI.GoogleMapsDirections(apiKey: Constants.kGoogleApiKey);
 
 class MainScreen extends StatefulWidget {
   MainScreen({this.title});
@@ -175,6 +176,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       key: _scaffoldKey,
       body: Stack(alignment: Alignment.topCenter, children: <Widget>[
         GoogleMap(
+          onLongPress: (latlng) {
+            _addDraggableMarker(latlng);
+          },
           onMapCreated: _onMapCreated,
           onCameraIdle: _onCameraIdle,
           initialCameraPosition: CameraPosition(target: _center, zoom: 15),
@@ -227,6 +231,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 ])),
         showCircularProgress(),
         showGetDirectionsButton(),
+        showGetPGRouteButton(),
         toggleStopsButton(),
         toggleGeoJSONDataButton(),
         preferencesButton(),
@@ -1066,29 +1071,12 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void showGeoJsonLines() async {
     //_toggleVisiblePolylines("geoline-");
-     polylines.clear();
-     imageFileList.clear();
+    polylines.clear();
+    imageFileList.clear();
     await processData('assets/Project1_Obstacles.geojson');
     await processData('assets/Project1_sidewalk.geojson');
     await processData('assets/Project1_PHOTOS.geojson');
     await processData('assets/Project1_TRACKS.geojson');
-
-    AllRoutes.WalkPathJSON w = await DataService().fetchPGRoutes();
-    _renderWalkRoute(w);
-    
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-    });
-
-    _controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(w.pathData[0].location[0].latitude, w.pathData[0].location[0].longitude),
-          zoom: 15.0,
-        ),
-      ),
-    );
   }
 
   Future<void> _toggleVisiblePolylines(String polylineId) async {
@@ -1118,6 +1106,82 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
     }
   }
+
+  void _addDraggableMarker(LatLng latLng) {
+    List<Marker> pgMarkers = _findPGMarkers();
+    if (pgMarkers.length == 2 ) return;
+
+    setState(() {
+      _markers[latLng.toString()] = Marker(
+          markerId: MarkerId("pgRoute" + latLng.toString()),
+          draggable: true,
+          position: latLng,
+          infoWindow: InfoWindow(
+            title: 'Custom Marker',
+          ),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose));
+    });
+  }
+
+  List<Marker> _findPGMarkers() {
+    List<Marker> m = [];
+    _markers.forEach((key, value) {
+      String id = value.markerId.value;
+      if (id.startsWith("pgRoute")) {
+        m.add(value);
+      }
+    });
+    return m;
+  }
+
+  Widget showGetPGRouteButton(){
+    List<Marker> pgMarkers = _findPGMarkers();
+    if (pgMarkers.length > 0 && pgMarkers.length < 3) {
+      return new Stack(
+        children: [
+          Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                width: 180,
+                child: RaisedButton(
+                  onPressed: () async {
+                    AllRoutes.WalkPathJSON w =
+                        await DataService().fetchPGRoutes(pgMarkers);
+                    _renderWalkRoute(w);
+
+                    if (!mounted) return;
+                    setState(() {
+                      _isLoading = false;
+                    });
+
+                    _controller.animateCamera(
+                      CameraUpdate.newCameraPosition(
+                        CameraPosition(
+                          target: LatLng(w.pathData[0].location[0].latitude,
+                              w.pathData[0].location[0].longitude),
+                          zoom: 15.0,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Get PG Routing'),
+                  color: Theme.of(context).primaryColor,
+                  textColor: Colors.white,
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: new BorderRadius.circular(18.0),
+                      side: BorderSide(color: Theme.of(context).accentColor)),
+                ),
+              ))
+        ],
+      );
+    } else
+      return Container(
+        width: 0,
+        height: 0,
+      );
+  }
 }
 
-enum ConfirmAction { CANCEL, ACCEPT }
+
