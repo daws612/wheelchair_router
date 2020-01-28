@@ -8,6 +8,7 @@ class UserService {
   static final _firestore = Firestore.instance;
 
   static Future<User> getDbUser(String uid) async {
+    print("Get user with uid :: " + uid);
     User user;
     await _firestore.collection('/users').document(uid).get().then((userDoc) {
       if (userDoc.data == null) { return null; }
@@ -39,6 +40,7 @@ class UserService {
           age: 0,
           gender: "Unspecified",
           userId: _anonUser.uid,
+          createdAt:  DateTime.now().toUtc(),
         );
       }      
       _firestore.collection('/users').document(_anonUser.uid).setData(dbUser.toJson());

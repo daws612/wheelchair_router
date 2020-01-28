@@ -4,9 +4,9 @@ import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_webservice/places.dart';
+import 'package:routing/Constants.dart';
 
-const kGoogleApiKey = "AIzaSyBUOmQEmER7vOSpaf0UvwYSwzQmhG2hcTs";
-GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
+GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: Constants.kGoogleApiKey);
 
 class PlacesSearchScreen extends StatefulWidget {
   PlacesSearchScreen({@required this.mapController, this.hintText});

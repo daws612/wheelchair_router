@@ -26,10 +26,10 @@ class _UserProfileState extends State<UserProfile> {
     _gender = widget.user.gender;
   }
 
-   _submit() async {
-     User user = User(userId: widget.user.userId, age: _age, gender: _gender);
-      UserService.updateUser(user);
-      Navigator.pop(context);
+  _submit() async {
+    User user = User(userId: widget.user.userId, age: _age, gender: _gender);
+    UserService.updateUser(user);
+    Navigator.pop(context);
   }
 
   @override

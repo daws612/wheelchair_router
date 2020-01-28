@@ -38,12 +38,6 @@ async function getWalkingRoutes(origin, destination) {
 
 async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp) {
 
-    const db = commons.makeDb({
-        host: config.schema.host,
-        user: config.schema.user,
-        password: config.schema.password,
-        database: config.schema.db
-    });
     var result = [];
 
     try {
@@ -60,14 +54,14 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, 
             ") < 1000 " +
             "ORDER BY `dist_m`";
 
-        var nearestDest = await db.query(nearestStopQuery, [destlat, destlon, destlat, destlon]);
-        var nearestOrigin = await db.query(nearestStopQuery, [originlat, originlon, originlat, originlon]);
+        var nearestDest = await commons.pool.query(nearestStopQuery, [destlat, destlon, destlat, destlon]);
+        var nearestOrigin = await commons.pool.query(nearestStopQuery, [originlat, originlon, originlat, originlon]);
 
         var pageSize = 2;
         var pageStart = 0;
         var pageEnd = pageStart + pageSize;
         while (result.length == 0 && pageStart < nearestOrigin.length) {
-            result = await createRouteDetails(originHttp, destinationHttp, db, pageStart, pageEnd, nearestOrigin, nearestDest, result);
+            result = await createRouteDetails(originHttp, destinationHttp, pageStart, pageEnd, nearestOrigin, nearestDest, result);
             if (result.length == 0) {
                 pageStart = pageEnd;
                 pageEnd = pageEnd + pageSize;
@@ -81,16 +75,14 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, 
     } catch (ex) {
         console.error('Unexpected exception occurred when trying to get directions \n' + ex);
         throw ex;
-    } finally {
-        await db.close();
     }
 
 }
 
-async function createRouteDetails(originHttp, destinationHttp, db, pageStart, pageEnd, nearestOrigin, nearestDest, result) {
+async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEnd, nearestOrigin, nearestDest, result) {
     for (var i = pageStart; i < nearestOrigin.length && i < pageEnd; i++) {
         for (var j = 0; j < nearestDest.length && j < pageEnd; j++) {
-            result = await fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigin, nearestDest, result)
+            result = await fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, nearestDest, result)
         } //for dest
     }// for origin
 
@@ -100,7 +92,7 @@ async function createRouteDetails(originHttp, destinationHttp, db, pageStart, pa
     if (result.length == 0 && pageEnd >= nearestOrigin.length && pageEnd < nearestDest.length) {
         for (var orgn = 0; orgn < nearestOrigin.length; orgn++) {
             for (var dstn = pageEnd; dstn < nearestDest.length; dstn++) {
-                result = await fetchDBRoutes(originHttp, destinationHttp, db, orgn, dstn, nearestOrigin, nearestDest, result)
+                result = await fetchDBRoutes(originHttp, destinationHttp, orgn, dstn, nearestOrigin, nearestDest, result)
             }
         }
     }
@@ -108,7 +100,7 @@ async function createRouteDetails(originHttp, destinationHttp, db, pageStart, pa
     return result;
 }
 
-async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigin, nearestDest, result) {
+async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, nearestDest, result) {
 
     console.log("Search for origin " + i + " and destination " + j);
     var origin = nearestOrigin[i];
@@ -138,7 +130,7 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
         "group by t.trip_id " +
         "order by a.departure_time ";
 
-    var routes = await db.query(routeQuery, [stop1, stop2]);
+    var routes = await commons.pool.query(routeQuery, [stop1, stop2]);
 
     console.log("Get route from " + stop1 + " - " + origin.stop_name + " to " + stop2 + " - " + destination.stop_name + " :: Found routes :: " + routes.length);
 
@@ -155,7 +147,7 @@ async function fetchDBRoutes(originHttp, destinationHttp, db, i, j, nearestOrigi
                 "WHERE st.stop_id = ? and trip_id = ?) " +
                 "ORDER BY stop_sequence asc";
             //howcan this query be made to include the origin and destination stops?
-            var routeStops = await db.query(routeStopsQuery, [tripId, stop1, tripId, stop2, tripId]);
+            var routeStops = await commons.pool.query(routeStopsQuery, [tripId, stop1, tripId, stop2, tripId]);
             routes[k]['stops'] = routeStops;
             console.log("Route index: " + k + " -- Number of stops found: " + routeStops.length);
 
