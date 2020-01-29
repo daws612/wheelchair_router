@@ -5,15 +5,16 @@ admin.initializeApp();
 const db = admin.firestore();
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 
+const config = require('./config');
 const util = require('util');
 const mysql = require('mysql');
 
 var pool = mysql.createPool({
     connectionLimit: 100,
-    host: '***REMOVED***',
-    user: 'wheelchair_routing',
-    password: '***REMOVED***',
-    database: 'wheelchair_routing'
+    host: config.schema.host,
+    user: config.schema.user,
+    password: config.schema.password,
+    database: config.schema.db
 });
 
 
@@ -40,7 +41,6 @@ pool.getConnection((err, connection) => {
 pool.query = util.promisify(pool.query);
 
 exports.helloWorld = functions.https.onRequest(async (request, response) => {
-
     var sqlQuery = util.format('SELECT * from polyline_path limit 2');
     var queryResult = await pool.query(sqlQuery);
     response.send(queryResult);
