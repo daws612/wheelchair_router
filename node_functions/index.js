@@ -7,7 +7,7 @@ var configJS = require('./config.js');
 const admin = require('./node_modules/firebase-admin');
 const serviceAccount = require("./serviceAccount.json");
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount), databaseURL: "https://wheelchair-router.firebaseio.com" });
+admin.initializeApp({ credential: admin.credential.cert(serviceAccount), databaseURL: "https://wheelchair-routing.firebaseio.com" });
 const firestore = admin.firestore();
 const settings = { timestampsInSnapshots: true };
 firestore.settings(settings);
@@ -34,7 +34,7 @@ function exportCSVTofirestore() {
     });
 }
 
-exportCSVTofirestore();
+//exportCSVTofirestore();
 
 
 const handleError = (error) => {
