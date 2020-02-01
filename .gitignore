@@ -83,4 +83,7 @@ android/app/google-services.json
 server_functions/connection.php
 api-cache/node_modules/*
 api-cache/config.js
+<<<<<<< HEAD
 cloud_functions/functions/config.js
+=======
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc

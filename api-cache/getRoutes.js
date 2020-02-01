@@ -39,9 +39,12 @@ async function getWalkingRoutes(origin, destination) {
 async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp) {
 
     var result = [];
+<<<<<<< HEAD
     var maxNumberOfOptions = 3;
     var timeToCheck = null;
     var timeInterval = 15;
+=======
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
 
     try {
 
@@ -63,6 +66,7 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, 
         var pageSize = 2;
         var pageStart = 0;
         var pageEnd = pageStart + pageSize;
+<<<<<<< HEAD
         while (result.length < maxNumberOfOptions && pageStart < nearestOrigin.length) {
 
             result = await createRouteDetails(originHttp, destinationHttp, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions);
@@ -72,6 +76,14 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, 
                 pageEnd = pageEnd + pageSize;
             } else
                 break;   
+=======
+        while (result.length == 0 && pageStart < nearestOrigin.length) {
+            result = await createRouteDetails(originHttp, destinationHttp, pageStart, pageEnd, nearestOrigin, nearestDest, result);
+            if (result.length == 0) {
+                pageStart = pageEnd;
+                pageEnd = pageEnd + pageSize;
+            }
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
         }
 
         console.log('\nSuccessfully complete routing request');
@@ -85,6 +97,7 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, 
 
 }
 
+<<<<<<< HEAD
 async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
     for (var i = pageStart; i < nearestOrigin.length && i < pageEnd; i++) {
         for (var j = 0; j < nearestDest.length && j < pageEnd; j++) {
@@ -96,12 +109,19 @@ async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEn
             result = await fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions)
             
             
+=======
+async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEnd, nearestOrigin, nearestDest, result) {
+    for (var i = pageStart; i < nearestOrigin.length && i < pageEnd; i++) {
+        for (var j = 0; j < nearestDest.length && j < pageEnd; j++) {
+            result = await fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, nearestDest, result)
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
         } //for dest
     }// for origin
 
     //all origins have been checked against destinations, if still no route found, 
     //go through all origins with the remaining unchecked destinations.
     //This will complete the stop pairs in the retrieved arrays
+<<<<<<< HEAD
     if (result.length < maxNumberOfOptions && pageEnd >= nearestOrigin.length && pageEnd < nearestDest.length) {
         for (var orgn = 0; orgn < nearestOrigin.length; orgn++) {
             for (var dstn = pageEnd; dstn < nearestDest.length; dstn++) {
@@ -113,6 +133,12 @@ async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEn
 
                 result = await fetchDBRoutes(originHttp, destinationHttp, orgn, dstn, nearestOrigin, nearestDest, result, maxNumberOfOptions)
                 
+=======
+    if (result.length == 0 && pageEnd >= nearestOrigin.length && pageEnd < nearestDest.length) {
+        for (var orgn = 0; orgn < nearestOrigin.length; orgn++) {
+            for (var dstn = pageEnd; dstn < nearestDest.length; dstn++) {
+                result = await fetchDBRoutes(originHttp, destinationHttp, orgn, dstn, nearestOrigin, nearestDest, result)
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
             }
         }
     }
@@ -120,7 +146,11 @@ async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEn
     return result;
 }
 
+<<<<<<< HEAD
 async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
+=======
+async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, nearestDest, result) {
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
 
     console.log("Search for origin " + i + " and destination " + j);
     var origin = nearestOrigin[i];
@@ -141,8 +171,13 @@ async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, n
         "a.stop_id = ? " +
         "and b.stop_id = ? " +
         "and a.trip_id = b.trip_id " +
+<<<<<<< HEAD
         //"and a.departure_time between '09:00' and TIME(DATE_ADD('2019-01-07 09:00', INTERVAL 15 MINUTE)) " +
         "and a.departure_time between current_time() and TIME(DATE_ADD(now(), INTERVAL 30 MINUTE)) " +
+=======
+        "and a.departure_time between '09:00' and TIME(DATE_ADD('2019-01-07 09:00', INTERVAL 15 MINUTE)) " +
+        //"and a.departure_time between current_time() and TIME(DATE_ADD(now(), INTERVAL 15 MINUTE)) " +
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
         "and t.service_id = (case  " +
         "when dayofweek(current_date()) between 2 and 6 then 1 " +
         "when dayofweek(current_date()) = 1 then 3 " +
@@ -169,7 +204,11 @@ async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, n
             //howcan this query be made to include the origin and destination stops?
             var routeStops = await commons.pool.query(routeStopsQuery, [tripId, stop1, tripId, stop2, tripId]);
             routes[k]['stops'] = routeStops;
+<<<<<<< HEAD
             console.log("Trip - " + tripId + " Route index: " + k + " - " + routes[k].route_short_name + " -- Number of stops found: " + routeStops.length);
+=======
+            console.log("Route index: " + k + " -- Number of stops found: " + routeStops.length);
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
 
             if (routes[k].stops.length < 2) {
                 routes.splice(k, 1); //remove kth element
@@ -181,7 +220,11 @@ async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, n
             for (var l = 0; l < routeStops.length - 1; l++) {
                 var originStop = routeStops[l].stop_lat + "," + routeStops[l].stop_lon;
                 var destStop = routeStops[l + 1].stop_lat + "," + routeStops[l + 1].stop_lon;
+<<<<<<< HEAD
                 //console.log("Get polyline from stop " + l + " to " + (l + 1));
+=======
+                console.log("Get polyline from stop " + l + " to " + (l + 1));
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
 
                 var googleUrl = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=driving&alternatives=true&key=%s', originStop, destStop, config.google.apikey);
                 var polylineResult = await commons.fetchDataFromCache(originStop, destStop, "polyline_path", "polyline_json", googleUrl, "driving");

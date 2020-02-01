@@ -41,7 +41,10 @@ dependencies:
   numberpicker: ^1.1.0
   geojson: ^0.8.0
   carousel_slider: ^1.3.0
+<<<<<<< HEAD
   f_logs: ^1.2.2
+=======
+>>>>>>> 08f3d425aa52809e75a168642015af28af2a33cc
 
 dev_dependencies:
   flutter_test:
