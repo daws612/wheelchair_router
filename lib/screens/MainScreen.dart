@@ -597,6 +597,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       setState(() {
         _resetMap();
+        _originController.text = _originController.text.isEmpty ? result["currentLoc"] : _originController.text;
         if (!origin) {
           _destinationController.text = result["description"];
           _destinationSet = true;
