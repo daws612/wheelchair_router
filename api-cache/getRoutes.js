@@ -133,6 +133,7 @@ async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, n
     var stop1 = origin.stop_id;
     var stop2 = destination.stop_id;
 
+    var timeZone = "SET time_zone = 'Europe/Istanbul';"
     var routeQuery = "SELECT r.*, t.trip_id, a.departure_time, b.arrival_time, t.* " +
         "from stop_times a, stop_times b  " +
         "left join trips t on t.trip_id=b.trip_id " +
@@ -150,6 +151,7 @@ async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, n
         "group by t.trip_id " +
         "order by a.departure_time ";
 
+    await commons.pool.query(timeZone);
     var routes = await commons.pool.query(routeQuery, [stop1, stop2]);
 
     console.log("Get route from " + stop1 + " - " + origin.stop_name + " to " + stop2 + " - " + destination.stop_name + " :: Found routes :: " + routes.length);
