@@ -146,6 +146,7 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
   }
 
   void getAndShowLocation(String placeId, String description) async {
+    if (!mounted) return;
     setState(() {
       this.isLoading = true;
       this.errorLoading = null;
@@ -171,7 +172,7 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
         if (place.status == "OK") {
           Navigator.pop(context, {
             "selectedAddress": place,
-            "description" : description,
+            "description": description,
             "currentLoc": currentLoc,
             "currentPosition": pos
           });

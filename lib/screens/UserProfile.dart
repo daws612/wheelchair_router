@@ -67,6 +67,7 @@ class _UserProfileState extends State<UserProfile> {
                         'Please choose a location'), // Not necessary for Option 1
                     value: _gender,
                     onChanged: (newValue) {
+                      if (!mounted) return;
                       setState(() {
                         _gender = newValue;
                       });

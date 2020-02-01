@@ -92,6 +92,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (result.length == 0) {
         print("Permission Granted");
         showCurrentLocation();
+        if (!mounted) return;
         setState(() {
           allPermissionsGranted = true;
         });
@@ -100,6 +101,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       } else {
         PermissionsService().requestPermission(result).then((result) {
           if (!result) {
+            if (!mounted) return;
             setState(() {
               _isLoading = false;
             });
@@ -120,6 +122,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           } else {
             //show current location/ set center to current location
             showCurrentLocation();
+            if (!mounted) return;
             setState(() {
               allPermissionsGranted = true;
             });
@@ -151,6 +154,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   LatLng _center = const LatLng(40.763221, 29.925132);
 
   void showCurrentLocation() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _progressText = 'Loading your location';
@@ -169,6 +173,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       ),
     );
 
+    if (!mounted) return;
     setState(() {
       _isLoading = false;
     });
@@ -349,6 +354,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                   onClicked: () {
                     selectedRoute = i;
                     _renderPolylines(routes);
+                    if (!mounted) return;
                     setState(() {});
                   },
                 );
@@ -595,9 +601,12 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ),
       );
 
+      if (!mounted) return;
       setState(() {
         _resetMap();
-        _originController.text = _originController.text.isEmpty ? result["currentLoc"] : _originController.text;
+        _originController.text = _originController.text.isEmpty
+            ? result["currentLoc"]
+            : _originController.text;
         if (!origin) {
           _destinationController.text = result["description"];
           _destinationSet = true;
@@ -621,6 +630,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     polylines.clear();
     if (_panelController.isPanelShown()) _panelController.hide();
     selectedRoute = 0;
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -633,6 +643,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   _getDirections() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _progressText = 'Getting directions...';
@@ -764,8 +775,10 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               icon: busStopIcon);
           _markers[stop.stopId.toString()] = m;
         });
+        if (!mounted) return;
         setState(() {});
       } else {
+        if (!mounted) return;
         setState(() {});
       }
     }
@@ -776,6 +789,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _markers.forEach((key, value) {
       String id = value.markerId.value;
       if (id.startsWith("stop-")) {
+        if (!mounted) return;
         setState(() {
           _markers[key] = value.copyWith(
             visibleParam: showStops, //!value.visible as per docs
@@ -888,6 +902,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       consumeTapEvents: true,
     );
     polylines[id] = polyline;
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -1013,6 +1028,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             onClicked: (value) {
               selectedRoute = value;
               _renderRoutes();
+              if (!mounted) return;
               setState(() {});
             },
           )),
@@ -1042,6 +1058,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           polylineId: id, width: 2, color: color, points: polylineCoords);
       polylines[id] = pointLine;
       index++;
+      if (!mounted) return;
       setState(() {});
     });
 
@@ -1056,6 +1073,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               BitmapDescriptor.hueYellow));
       _markers[fileName + index.toString()] = m;
       index++;
+      if (!mounted) return;
       setState(() {});
     });
 
@@ -1075,12 +1093,14 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 BitmapDescriptor.hueYellow),
             onTap: () {
               showImageCarousel();
+              if (!mounted) return;
               setState(() {
                 showCarousel = !showCarousel;
               });
             });
         _markers[fileName + index.toString()] = m;
         index++;
+        if (!mounted) return;
         setState(() {});
       }
     });
@@ -1103,6 +1123,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     polylines.forEach((key, value) {
       String id = value.polylineId.value;
       if (id.startsWith(polylineId)) {
+        if (!mounted) return;
         setState(() {
           polylines[key] = value.copyWith(visibleParam: !value.visible);
         });
@@ -1131,6 +1152,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     List<Marker> pgMarkers = _findPGMarkers();
     if (pgMarkers.length == 2) return;
 
+    if (!mounted) return;
     setState(() {
       _markers[latLng.toString()] = Marker(
           markerId: MarkerId("pgRoute" + latLng.toString()),
