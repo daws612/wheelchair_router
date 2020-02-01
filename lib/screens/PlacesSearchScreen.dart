@@ -138,14 +138,14 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
                 leading: Icon(Icons.place),
                 title: Text(data.description),
                 onTap: () {
-                  getAndShowLocation(data.placeId);
+                  getAndShowLocation(data.placeId, data.description);
                 },
               ))
           .toList(),
     );
   }
 
-  void getAndShowLocation(String placeId) async {
+  void getAndShowLocation(String placeId, String description) async {
     setState(() {
       this.isLoading = true;
       this.errorLoading = null;
@@ -171,6 +171,7 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
         if (place.status == "OK") {
           Navigator.pop(context, {
             "selectedAddress": place,
+            "description" : description,
             "currentLoc": currentLoc,
             "currentPosition": pos
           });

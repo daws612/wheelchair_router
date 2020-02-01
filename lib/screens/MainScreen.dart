@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:typed_data';
@@ -26,9 +27,8 @@ import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'RouteDetails.dart';
 import 'package:geojson/geojson.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show SystemChannels, rootBundle;
 import 'package:latlong/latlong.dart' as flutterLatLng;
-
 
 DirectionsAPI.GoogleMapsDirections directions =
     DirectionsAPI.GoogleMapsDirections(apiKey: Constants.kGoogleApiKey);
@@ -45,7 +45,7 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   GoogleMapController _controller;
   Geolocator _geolocator = Geolocator();
-  bool _isLoading = false, _destinationSet = false, _originSet = false;
+  bool _isLoading = false, _destinationSet = false;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   final Map<String, Marker> _markers = {};
@@ -71,6 +71,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   List<String> imageFileList = [];
   bool showCarousel = false;
+  bool allPermissionsGranted = false;
 
   @override
   void dispose() {
@@ -80,6 +81,58 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  _checkPermissions() {
+    var storagePermission =
+        Platform.isAndroid ? PermissionGroup.storage : PermissionGroup.photos;
+
+    PermissionsService().getPermissionsToAsk([
+      storagePermission,
+      PermissionGroup.location
+    ]) //check permission returns a Future
+        .then((result) {
+      if (result.length == 0) {
+        print("Permission Granted");
+        showCurrentLocation();
+        setState(() {
+          allPermissionsGranted = true;
+        });
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _panelController.hide());
+      } else {
+        PermissionsService().requestPermission(result).then((result) {
+          if (!result) {
+            setState(() {
+              _isLoading = false;
+            });
+            print("Not yet granted or denied");
+            final snackBar = SnackBar(
+                duration: Duration(minutes: 5),
+                content: Text(
+                    'Please enable both location and storage permissions.'),
+                action: SnackBarAction(
+                  label: 'Accept',
+                  onPressed: () {
+                    SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+                    PermissionsService().openAppSettings();
+                  },
+                ));
+            WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _scaffoldKey.currentState.showSnackBar(snackBar));
+          } else {
+            //show current location/ set center to current location
+            showCurrentLocation();
+            setState(() {
+              allPermissionsGranted = true;
+            });
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) => _panelController.hide());
+          }
+        });
+      }
+    });
+    // handling in callback to prevent blocking UI
+  }
+
   @override
   void initState() {
     super.initState();
@@ -87,44 +140,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _fabHeight = _initFabHeight;
 
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _panelController.hide());
-
-    PermissionsService()
-        .hasPermission(
-            PermissionGroup.locationAlways) //check permission returns a Future
-        .then((result) {
-      if (result) {
-        print("Permission Granted");
-        showCurrentLocation();
-      } else {
-        PermissionsService()
-            .requestPermission(PermissionGroup.locationAlways)
-            .then((result) {
-          if (!result) {
-            setState(() {
-              _isLoading = false;
-            });
-            print("Not yet granted or denied");
-            final snackBar = SnackBar(
-                content: Text('Please enable location permissions'),
-                action: SnackBarAction(
-                  label: 'Accept',
-                  onPressed: () {
-                    PermissionsService().openAppSettings();
-                  },
-                ));
-            WidgetsBinding.instance.addPostFrameCallback(
-                (_) => _scaffoldKey.currentState.showSnackBar(snackBar));
-            Scaffold.of(context).showSnackBar(snackBar);
-          } else {
-            //show current location/ set center to current location
-            showCurrentLocation();
-          }
-        });
-      }
-    });
-    // handling in callback to prevent blocking UI
+    _checkPermissions();
 
     BitmapDescriptor.fromAssetImage(ImageConfiguration(size: Size(48, 48)),
             'assets/images/bus_stop_32.png')
@@ -174,86 +190,90 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      body: Stack(alignment: Alignment.topCenter, children: <Widget>[
-        GoogleMap(
-          onLongPress: (latlng) {
-            _addDraggableMarker(latlng);
-          },
-          onMapCreated: _onMapCreated,
-          onCameraIdle: _onCameraIdle,
-          initialCameraPosition: CameraPosition(target: _center, zoom: 15),
-          markers: _markers.values.toSet(),
-          polylines: Set<Polyline>.of(polylines.values),
-          myLocationEnabled: true,
-          myLocationButtonEnabled: true,
-          padding: EdgeInsets.only(
-            top: _destinationSet ? 170 : 100.0,
-          ),
-          mapType: MapType.normal,
-        ),
-        showImageCarousel(),
-        showOriginTextField(),
-        Positioned(
-            // To take AppBar Size only
-            top: _destinationSet ? 115.0 : 50.0,
-            left: 20.0,
-            right: 20.0,
-            child: AppBar(
-                backgroundColor: Colors.white,
-                primary: false,
-                title: TextField(
-                  readOnly: true,
-                  controller: _destinationController,
-                  decoration: InputDecoration(
-                      hintText: "Search your destination...",
-                      border: InputBorder.none,
-                      hintStyle: TextStyle(color: Colors.grey)),
-                  onTap: () {
-                    _navigateAndDisplaySelection(context, false);
-                  },
+      body: allPermissionsGranted
+          ? Stack(alignment: Alignment.topCenter, children: <Widget>[
+              GoogleMap(
+                onLongPress: (latlng) {
+                  _addDraggableMarker(latlng);
+                },
+                onMapCreated: _onMapCreated,
+                onCameraIdle: _onCameraIdle,
+                initialCameraPosition:
+                    CameraPosition(target: _center, zoom: 15),
+                markers: _markers.values.toSet(),
+                polylines: Set<Polyline>.of(polylines.values),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: true,
+                padding: EdgeInsets.only(
+                  top: _destinationSet ? 170 : 100.0,
                 ),
-                actions: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.search,
-                        color: Theme.of(context).accentColor),
-                    onPressed: () {
-                      _navigateAndDisplaySelection(context, false);
-                    },
-                  ),
-                  IconButton(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    icon: CircleAvatar(
-                      backgroundImage:
-                          AssetImage('assets/images/kocaeli_logo.jpg'),
-                    ),
-                    onPressed: () {},
-                  ),
-                ])),
-        showCircularProgress(),
-        showGetDirectionsButton(),
-        showGetPGRouteButton(),
-        toggleStopsButton(),
-        toggleGeoJSONDataButton(),
-        preferencesButton(),
-        SlidingUpPanel(
-          //color: Theme.of(context).primaryColor.withOpacity(0.5),
-          controller: _panelController,
-          maxHeight: MediaQuery.of(context).size.height,
-          minHeight: _panelHeightClosed,
-          parallaxEnabled: true,
-          parallaxOffset: .5,
-          panelSnapping: false,
-          body: Container(),
-          panel: _busRoutesPanel(), //_googleWalkingDirectionsPanel(),
-          //color: Colors.white70,
-          borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(18.0), topRight: Radius.circular(18.0)),
-          onPanelSlide: (double pos) => setState(() {
-            _fabHeight =
-                pos * (_panelHeightOpen - _panelHeightClosed) + _initFabHeight;
-          }),
-        ),
-      ]),
+                mapType: MapType.normal,
+              ),
+              showImageCarousel(),
+              showOriginTextField(),
+              Positioned(
+                  // To take AppBar Size only
+                  top: _destinationSet ? 115.0 : 50.0,
+                  left: 20.0,
+                  right: 20.0,
+                  child: AppBar(
+                      backgroundColor: Colors.white,
+                      primary: false,
+                      title: TextField(
+                        readOnly: true,
+                        controller: _destinationController,
+                        decoration: InputDecoration(
+                            hintText: "Search your destination...",
+                            border: InputBorder.none,
+                            hintStyle: TextStyle(color: Colors.grey)),
+                        onTap: () {
+                          _navigateAndDisplaySelection(context, false);
+                        },
+                      ),
+                      actions: <Widget>[
+                        IconButton(
+                          icon: Icon(Icons.search,
+                              color: Theme.of(context).accentColor),
+                          onPressed: () {
+                            _navigateAndDisplaySelection(context, false);
+                          },
+                        ),
+                        IconButton(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          icon: CircleAvatar(
+                            backgroundImage:
+                                AssetImage('assets/images/kocaeli_logo.jpg'),
+                          ),
+                          onPressed: () {},
+                        ),
+                      ])),
+              showCircularProgress(),
+              showGetDirectionsButton(),
+              showGetPGRouteButton(),
+              toggleStopsButton(),
+              toggleGeoJSONDataButton(),
+              preferencesButton(),
+              SlidingUpPanel(
+                //color: Theme.of(context).primaryColor.withOpacity(0.5),
+                controller: _panelController,
+                maxHeight: MediaQuery.of(context).size.height,
+                minHeight: _panelHeightClosed,
+                parallaxEnabled: true,
+                parallaxOffset: .5,
+                panelSnapping: false,
+                body: Container(),
+                panel: _busRoutesPanel(), //_googleWalkingDirectionsPanel(),
+                //color: Colors.white70,
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(18.0),
+                    topRight: Radius.circular(18.0)),
+                onPanelSlide: (double pos) => setState(() {
+                  _fabHeight = pos * (_panelHeightOpen - _panelHeightClosed) +
+                      _initFabHeight;
+                }),
+              ),
+            ])
+          : Container(),
     );
   }
 
@@ -578,20 +598,20 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       setState(() {
         _resetMap();
-        origin ? _originSet = true : _destinationSet = true;
-        String originAddress = _originSet
-            ? selectedAddress.result.formattedAddress
-            : result["currentLoc"];
-        _originController.text = originAddress;
-        if (!origin)
-          _destinationController.text = selectedAddress.result.formattedAddress;
+        if (!origin) {
+          _destinationController.text = result["description"];
+          _destinationSet = true;
+        } else {
+          String originAddress =
+              origin ? result["description"] : result["currentLoc"];
+          _originController.text = originAddress;
+        }
       });
     }
   }
 
   _closeRouting() {
     _destinationSet = false;
-    _originSet = false;
     _destinationController.clear();
     _originController.clear();
     _markers.remove('Origin');
@@ -623,7 +643,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     LatLng destination = _markers["Destination"].position;
     Position lastKnownPosition = await _geolocator.getLastKnownPosition(
         locationPermissionLevel: GeolocationPermission.locationAlways);
-    LatLng origin = _originSet
+    LatLng origin = _markers.containsKey("Origin")
         ? _markers["Origin"].position
         : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
 
@@ -1109,7 +1129,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void _addDraggableMarker(LatLng latLng) {
     List<Marker> pgMarkers = _findPGMarkers();
-    if (pgMarkers.length == 2 ) return;
+    if (pgMarkers.length == 2) return;
 
     setState(() {
       _markers[latLng.toString()] = Marker(
@@ -1135,7 +1155,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     return m;
   }
 
-  Widget showGetPGRouteButton(){
+  Widget showGetPGRouteButton() {
     List<Marker> pgMarkers = _findPGMarkers();
     if (pgMarkers.length > 0 && pgMarkers.length < 3) {
       return new Stack(
@@ -1183,5 +1203,3 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
   }
 }
-
-

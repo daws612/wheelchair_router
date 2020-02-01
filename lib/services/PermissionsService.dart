@@ -3,16 +3,22 @@ import 'package:permission_handler/permission_handler.dart';
 class PermissionsService {
   final PermissionHandler _permissionHandler = new PermissionHandler();
 
-  Future<bool> requestPermission(PermissionGroup _permissionGroup) async{
-    var result = await _permissionHandler.requestPermissions([_permissionGroup]);
-    if(result[_permissionGroup] == PermissionStatus.granted)
-      return true;
+  Future<bool> requestPermission(List<PermissionGroup> _permissionGroup) async {
+    var result = await _permissionHandler.requestPermissions(_permissionGroup);
+    var checkIfAllGranted = await getPermissionsToAsk(_permissionGroup);
+    if (checkIfAllGranted.length == 0) return true;
     return false;
   }
 
-  Future<bool> hasPermission(PermissionGroup permissionGroup) async{
-    var result = await _permissionHandler.checkPermissionStatus(permissionGroup);
-    return result == PermissionStatus.granted;
+  Future<List<PermissionGroup>> getPermissionsToAsk(
+      List<PermissionGroup> permissionGroupList) async {
+    List<PermissionGroup> needToAsk = [];
+    for (PermissionGroup permissionGroup in permissionGroupList) {
+      var result =
+          await _permissionHandler.checkPermissionStatus(permissionGroup);
+      if (result != PermissionStatus.granted) needToAsk.add(permissionGroup);
+    }
+    return needToAsk;
   }
 
   void openAppSettings() {

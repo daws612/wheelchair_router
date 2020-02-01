@@ -1,8 +1,41 @@
 import 'package:flutter/material.dart';
 import 'services/UserService.dart';
 import 'package:routing/screens/MainScreen.dart';
+import 'package:f_logs/f_logs.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  init();
+  runApp(MyApp());
+}
+
+init() {
+  LogsConfig config = FLog.getDefaultConfigurations()
+    ..isDevelopmentDebuggingEnabled = true
+    ..timestampFormat = TimestampFormat.TIME_FORMAT_FULL_3
+    ..formatType = FormatType.FORMAT_CUSTOM
+    ..fieldOrderFormatCustom = [
+      FieldName.TIMESTAMP,
+      FieldName.LOG_LEVEL,
+      FieldName.CLASSNAME,
+      FieldName.METHOD_NAME,
+      FieldName.TEXT,
+      FieldName.EXCEPTION,
+      FieldName.STACKTRACE
+    ]
+    ..customOpeningDivider = "|"
+    ..customClosingDivider = "|";
+
+  FLog.applyConfigurations(config);
+
+  FLog.logThis(
+    className: "Main",
+    methodName: "init",
+    text: "Device",
+    type: LogLevel.INFO,
+    dataLogType: DataLogType.DEVICE.toString(),
+  );
+}
 
 const primaryColor = const Color(0xFF00AA4F);
 const accentColor = const Color(0xff5f7676);
