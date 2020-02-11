@@ -6,6 +6,7 @@ const getPath = require('./getPath');
 const getRoutes = require('./getRoutes');
 const getStops = require('./getStops');
 const getElevation = require('./getElevation');
+const userLocationLogger = require('./userLocationLogger');
 const pgRoute = require('./pgRoute');
 var logFileName = __dirname + '/api-cache.log';
 
@@ -17,6 +18,7 @@ server.get('/getbusroutes', getRoutes.performRouting);
 server.get('/getbusstops', getStops.getBusStops);
 server.get('/getelevation', getElevation.httpGetElevation);
 server.get('/pgroute', pgRoute.pgRoute);
+server.get('/userLocationLogger', userLocationLogger.logCurrentLocation);
 
 //log to file
 var logFile = fs.createWriteStream(logFileName, { flags: 'a' });
