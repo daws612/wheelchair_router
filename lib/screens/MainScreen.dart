@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -23,6 +24,7 @@ import 'package:routing/services/DataService.dart';
 import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
+import 'package:routing/services/UserLocationLoggerService.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'RouteDetails.dart';
 import 'package:geojson/geojson.dart';
@@ -135,6 +137,12 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // handling in callback to prevent blocking UI
   }
 
+  void _setupLocationLoggingTimer() {
+    Timer.periodic(Duration(seconds: 10), (timer) { 
+      UserLocationLoggerService.logCurrentLocation("currentLocation", "origin", "destination");
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -143,6 +151,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _fabHeight = _initFabHeight;
 
     _checkPermissions();
+
+    _setupLocationLoggingTimer();
 
     BitmapDescriptor.fromAssetImage(ImageConfiguration(size: Size(48, 48)),
             'assets/images/bus_stop_32.png')
