@@ -12,7 +12,7 @@ async function logCurrentLocation(req, res, next) {
 
         var initSql = "CREATE TABLE IF NOT EXISTS user_location_history (" + 
             " id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, " +
-            " userId, VARCHAR(100), " + 
+            " userId VARCHAR(100), " + 
             " currentLocation VARCHAR(100), " + 
             " origin VARCHAR(100), " + 
             " destination VARCHAR(100), " + 
@@ -27,7 +27,7 @@ async function logCurrentLocation(req, res, next) {
             `'${origin}', ` +
             `'${destination}');`; 
 
-        commons.query(insertSQL);
+        commons.pool.query(insertSQL);
 
         res.send('OK');
     } catch (ex) {
