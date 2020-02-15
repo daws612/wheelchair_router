@@ -83,7 +83,7 @@ class PolylineJSON {
     return new PolylineJSON(
         location:
             list.map((i) => LocationJSON.fromJson(i['location'])).toList(),
-        slope: json['slope'],
+        slope: json['slope'] is double ? json['slope'] : json['slope']/10,
         pathIndex: index);
   }
 }

@@ -2,6 +2,7 @@ const config = require('./config');
 const commons = require('./commons');
 const util = require('util');
 const getElevation = require('./getElevation');
+const pgRoute = require('./pgRoute');
 
 async function performRouting(req, res, next) {
     var response = {busRoutes: "", walkingDirections: ""};
@@ -9,14 +10,14 @@ async function performRouting(req, res, next) {
     try{
 
         var params = req.query;
-        var originlat = params.originlat;
-        var originlon = params.originlon;
-        var destlat = params.destlat;
-        var destlon = params.destlon;
+        var originlat = +params.originlat;
+        var originlon = +params.originlon;
+        var destlat = +params.destlat;
+        var destlon = +params.destlon;
         var originHttp = originlat + "," + originlon;
         var destinationHttp = destlat + "," + destlon;
 
-        var walkingDirections = await getWalkingRoutes(originHttp, destinationHttp);
+        var walkingDirections = await commons.getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon); //await getWalkingRoutes(originHttp, destinationHttp);
         var busRoutes = await getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp);
 
         response.walkingDirections = walkingDirections;
@@ -36,7 +37,7 @@ async function getWalkingRoutes(origin, destination) {
     return walkingDirections;
 }
 
-async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp) {
+async function getBusRoutes(originlat, originlon, destlat, destlon) {
 
     var result = [];
     var maxNumberOfOptions = 3;
@@ -65,7 +66,7 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, 
         var pageEnd = pageStart + pageSize;
         while (result.length < maxNumberOfOptions && pageStart < nearestOrigin.length) {
 
-            result = await createRouteDetails(originHttp, destinationHttp, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions);
+            result = await createRouteDetails(originlat, originlon, destlat, destlon, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions);
             
             if (result.length < maxNumberOfOptions) {
                 pageStart = pageEnd;
@@ -85,7 +86,7 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, originHttp, 
 
 }
 
-async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
+async function createRouteDetails(originlat, originlon, destlat, destlon, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
     for (var i = pageStart; i < nearestOrigin.length && i < pageEnd; i++) {
         for (var j = 0; j < nearestDest.length && j < pageEnd; j++) {
             if(result.length >= maxNumberOfOptions){
@@ -93,7 +94,7 @@ async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEn
                 j = nearestDest.length;
                 break;
             }
-            result = await fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions)
+            result = await fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions)
             
             
         } //for dest
@@ -111,7 +112,7 @@ async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEn
                     break;
                 }
 
-                result = await fetchDBRoutes(originHttp, destinationHttp, orgn, dstn, nearestOrigin, nearestDest, result, maxNumberOfOptions)
+                result = await fetchDBRoutes(originlat, originlon, destlat, destlon, orgn, dstn, nearestOrigin, nearestDest, result, maxNumberOfOptions)
                 
             }
         }
@@ -120,7 +121,7 @@ async function createRouteDetails(originHttp, destinationHttp, pageStart, pageEn
     return result;
 }
 
-async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
+async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
 
     console.log("Search for origin " + i + " and destination " + j);
     var origin = nearestOrigin[i];
@@ -200,13 +201,15 @@ async function fetchDBRoutes(originHttp, destinationHttp, i, j, nearestOrigin, n
             if (routeStops.length > 1) {
                 var firstStop = routeStops[0].stop_lat + "," + routeStops[0].stop_lon;
                 console.log("Get walking route to first stop: " + routeStops[0].stop_name);
-                var tofirstStop = await getElevation.getWalkingDirections(originHttp, firstStop, true);
+                //var tofirstStop = await getElevation.getWalkingDirections(originlat + "," + originlon, firstStop, true);
+                var tofirstStop = await commons.getSidewalkOrWalkingDirections(originlat, originlon, routeStops[0].stop_lat, routeStops[0].stop_lon);
                 routes[k]["toFirstStop"] = tofirstStop;
 
 
                 var lastStop = routeStops[routeStops.length - 1].stop_lat + "," + routeStops[routeStops.length - 1].stop_lon;
                 console.log("Get walking route from last stop: " + routeStops[routeStops.length - 1].stop_name);
-                var fromLastStop = await getElevation.getWalkingDirections(lastStop, destinationHttp, true);
+                //var fromLastStop = await getElevation.getWalkingDirections(lastStop, destlat + "," + destlon, true);
+                var fromLastStop = await commons.getSidewalkOrWalkingDirections(routeStops[routeStops.length - 1].stop_lat, routeStops[routeStops.length - 1].stop_lon, destlat, destlon);
                 routes[k]["fromLastStop"] = fromLastStop;
             }
         } //for routes

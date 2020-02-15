@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,7 +9,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:routing/Constants.dart';
+import 'package:routing/Constants.dart' as Const;
 import 'package:routing/models/AllRoutesJSON.dart' as AllRoutes;
 import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/RoutesJSON.dart';
@@ -32,7 +31,7 @@ import 'package:flutter/services.dart' show SystemChannels, rootBundle;
 import 'package:latlong/latlong.dart' as flutterLatLng;
 
 DirectionsAPI.GoogleMapsDirections directions =
-    DirectionsAPI.GoogleMapsDirections(apiKey: Constants.kGoogleApiKey);
+    DirectionsAPI.GoogleMapsDirections(apiKey: Const.Constants.kGoogleApiKey);
 
 class MainScreen extends StatefulWidget {
   MainScreen({this.title});
@@ -79,10 +78,27 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _originController.dispose();
     _destinationController.dispose();
     WidgetsBinding.instance.removeObserver(this);
+
     super.dispose();
   }
 
+  @override
+void didChangeAppLifecycleState(AppLifecycleState state) {
+  if(state == AppLifecycleState.resumed){
+    // user returned to our app
+  }else if(state == AppLifecycleState.inactive){
+    // app is inactive
+  }else if(state == AppLifecycleState.paused){
+    dispose();
+    // user is about quit our app temporally
+  }else if(state == AppLifecycleState.detached){
+    dispose();
+    // app suspended (not used in iOS)
+  }
+}
+
   _checkPermissions() {
+
     var storagePermission =
         Platform.isAndroid ? PermissionGroup.storage : PermissionGroup.photos;
 
@@ -92,6 +108,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     ]) //check permission returns a Future
         .then((result) {
       if (result.length == 0) {
+        
         print("Permission Granted");
         showCurrentLocation();
         if (!mounted) return;
@@ -331,9 +348,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               flex: 1,
               child: GestureDetector(
                 onTap: () async {
-                  final ConfirmAction action =
+                  final Const.ConfirmAction action =
                       await _asyncConfirmDialog(context);
-                  if (action == ConfirmAction.ACCEPT) _closeRouting();
+                  if (action == Const.ConfirmAction.ACCEPT) _closeRouting();
                 },
                 child: Align(
                   alignment: Alignment.centerLeft,
@@ -731,8 +748,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     });
   }
 
-  Future<ConfirmAction> _asyncConfirmDialog(BuildContext context) async {
-    return showDialog<ConfirmAction>(
+  Future<Const.ConfirmAction> _asyncConfirmDialog(BuildContext context) async {
+    return showDialog<Const.ConfirmAction>(
       context: context,
       barrierDismissible: false, // user must tap button for close dialog!
       builder: (BuildContext context) {
@@ -744,13 +761,13 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             FlatButton(
               child: const Text('CANCEL'),
               onPressed: () {
-                Navigator.of(context).pop(ConfirmAction.CANCEL);
+                Navigator.of(context).pop(Const.ConfirmAction.CANCEL);
               },
             ),
             FlatButton(
               child: const Text('ACCEPT'),
               onPressed: () {
-                Navigator.of(context).pop(ConfirmAction.ACCEPT);
+                Navigator.of(context).pop(Const.ConfirmAction.ACCEPT);
               },
             )
           ],
@@ -1008,9 +1025,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 flex: 1,
                 child: GestureDetector(
                   onTap: () async {
-                    final ConfirmAction action =
+                    final Const.ConfirmAction action =
                         await _asyncConfirmDialog(context);
-                    if (action == ConfirmAction.ACCEPT) _closeRouting();
+                    if (action == Const.ConfirmAction.ACCEPT) _closeRouting();
                   },
                   child: Align(
                     alignment: Alignment.centerLeft,
@@ -1198,24 +1215,25 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 width: 180,
                 child: RaisedButton(
                   onPressed: () async {
-                    AllRoutes.WalkPathJSON w =
-                        await DataService().fetchPGRoutes(pgMarkers);
-                    _renderWalkRoute(w);
+                    await _getBusRoutes(pgMarkers[0].position, pgMarkers[1].position);
+                    // AllRoutes.WalkPathJSON w =
+                    //     await DataService().fetchPGRoutes(pgMarkers);
+                    // _renderWalkRoute(w);
 
-                    if (!mounted) return;
-                    setState(() {
-                      _isLoading = false;
-                    });
+                    // if (!mounted) return;
+                    // setState(() {
+                    //   _isLoading = false;
+                    // });
 
-                    _controller.animateCamera(
-                      CameraUpdate.newCameraPosition(
-                        CameraPosition(
-                          target: LatLng(w.pathData[0].location[0].latitude,
-                              w.pathData[0].location[0].longitude),
-                          zoom: 15.0,
-                        ),
-                      ),
-                    );
+                    // _controller.animateCamera(
+                    //   CameraUpdate.newCameraPosition(
+                    //     CameraPosition(
+                    //       target: LatLng(w.pathData[0].location[0].latitude,
+                    //           w.pathData[0].location[0].longitude),
+                    //       zoom: 15.0,
+                    //     ),
+                    //   ),
+                    // );
                   },
                   child: const Text('Get PG Routing'),
                   color: Theme.of(context).primaryColor,

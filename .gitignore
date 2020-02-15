@@ -84,4 +84,4 @@ server_functions/connection.php
 api-cache/node_modules/*
 api-cache/config.js
 cloud_functions/functions/config.js
-flutter-plugins-dependencies
+.flutter-plugins-dependencies

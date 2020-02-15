@@ -16,7 +16,9 @@ class PermissionsService {
     for (PermissionGroup permissionGroup in permissionGroupList) {
       var result =
           await _permissionHandler.checkPermissionStatus(permissionGroup);
-      if (result != PermissionStatus.granted) needToAsk.add(permissionGroup);
+      if (result != PermissionStatus.granted) {
+        needToAsk.add(permissionGroup);
+      }
     }
     return needToAsk;
   }

@@ -2,6 +2,8 @@ const util = require('util');
 const config = require('./config');
 const mysql = require('mysql');
 var restify_clients = require('restify-clients');
+const getElevation = require('./getElevation');
+const pgRoute = require('./pgRoute');
 
 var pool = mysql.createPool({
     connectionLimit: 100,
@@ -111,6 +113,25 @@ async function saveCacheData(origin, destination, cobj, tableName, fieldName, di
     
 }
 
+async function getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon) {
+
+    var originHttp = originlat + "," + originlon;
+    var destinationHttp = destlat + "," + destlon;
+
+    console.log("Get sidewalk directions.");
+    var sidewalkDirs = await pgRoute.getSidewalkDirections(originlat, originlon, destlat, destlon);
+    if(sidewalkDirs === 'undefined' || sidewalkDirs.length == 0) {
+        console.log("Get walking route.");
+        var walkingDirections = await getElevation.getWalkingDirections(originHttp, destinationHttp, true);
+        if(walkingDirections === 'undefined' || walkingDirections.length == 0)
+            console.log("No walking directions found");
+        return walkingDirections;
+    } else {
+        return sidewalkDirs;
+    }
+}
+
 module.exports.pool = pool;
 module.exports.fetchFromGoogle = fetchFromGoogle;
 module.exports.fetchDataFromCache = fetchDataFromCache;
+module.exports.getSidewalkOrWalkingDirections = getSidewalkOrWalkingDirections;

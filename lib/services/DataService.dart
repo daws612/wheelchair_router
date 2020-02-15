@@ -49,7 +49,7 @@ class DataService {
 
     //https://missfarukh.com/server_functions/getRoutes.php?originlat=40.76012279512181&originlon=29.922576919198036&destlat=40.824600&destlon=29.919007
     //http://192.168.43.238:9595/getbusroutes?originlat=40.8191533&originlon=29.923916099999985&destlat=40.7656144&destlon=29.925500199999988
-    var url = 'https://api.jaywjay.com/wheelchair/getbusroutes$params';
+    var url = 'http://192.168.43.239:9595/getbusroutes$params';
 
     print("Fetching routes from - " + url);
 
@@ -74,9 +74,19 @@ class DataService {
   }
 
   Future<WalkPathJSON> fetchPGRoutes(List<Marker> pgMarkers) async {
-    //https://missfarukh.com/server_functions/getRoutes.php?originlat=40.76012279512181&originlon=29.922576919198036&destlat=40.824600&destlon=29.919007
-    //http://192.168.43.238:9595/getbusroutes?originlat=40.8191533&originlon=29.923916099999985&destlat=40.7656144&destlon=29.925500199999988
-    var url = "https://api.jaywjay.com/wheelchair/pgroute";
+    //localhost:9595/pgroute?originlat=40.763689&originlon=29.929532&destlat=40.765787&destlon=29.929868
+    LatLng origin = pgMarkers[0].position;
+    LatLng destination = pgMarkers[1].position;
+
+    String params = "?originlat=" +
+        origin.latitude.toString() +
+        '&originlon=' +
+        origin.longitude.toString() +
+        '&destlat=' +
+        destination.latitude.toString() +
+        '&destlon=' +
+        destination.longitude.toString();
+    var url = "http://192.168.43.239:9595/pgroute$params";
 
     print("Fetching routes from - " + url);
 
