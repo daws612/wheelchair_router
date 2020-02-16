@@ -16,18 +16,21 @@ class UserProfile extends StatefulWidget {
 class _UserProfileState extends State<UserProfile> {
   final _formKey = GlobalKey<FormState>();
   List<String> _genders = ['Male', 'Female', 'Unspecified'];
+  List<String> _wheelchairTypes = ['Electric', 'Manual', 'Unspecified'];
   int _age = 0;
   String _gender = "Unspecified";
+  String _wheelchairType = "Unspecified";
 
   @override
   void initState() {
     super.initState();
     _age = widget.user.age;
     _gender = widget.user.gender;
+    _wheelchairType = widget.user.wheelchairtype;
   }
 
   _submit() async {
-    User user = User(userId: widget.user.userId, age: _age, gender: _gender);
+    User user = User(userId: widget.user.userId, age: _age, gender: _gender, wheelchairtype: _wheelchairType);
     UserService.updateUser(user);
     Navigator.pop(context);
   }
@@ -73,6 +76,32 @@ class _UserProfileState extends State<UserProfile> {
                       });
                     },
                     items: _genders.map((location) {
+                      return DropdownMenuItem(
+                        child: new Text(location),
+                        value: location,
+                      );
+                    }).toList(),
+                  ),
+                  Spacer(),
+                ],
+              ),
+            ),
+            Container(
+              child: Row(
+                children: <Widget>[
+                  Text("Wheelchair Type:"),
+                  Spacer(),
+                  DropdownButton(
+                    hint: Text(
+                        'Please choose a wheelchair type'), // Not necessary for Option 1
+                    value: _wheelchairType,
+                    onChanged: (newValue) {
+                      if (!mounted) return;
+                      setState(() {
+                        _wheelchairType = newValue;
+                      });
+                    },
+                    items: _wheelchairTypes.map((location) {
                       return DropdownMenuItem(
                         child: new Text(location),
                         value: location,

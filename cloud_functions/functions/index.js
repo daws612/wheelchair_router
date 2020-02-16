@@ -60,8 +60,8 @@ async function createUser(user, id) {
     if(exists)
         return updateUser(user, id);
     console.log("Create user with id :: " + id);
-    var sqlQuery = 'INSERT INTO users(gender, age, firebase_id, created_at) VALUES(?,?,?, now())';
-    await pool.query(sqlQuery, [user.gender, user.age, id]);
+    var sqlQuery = 'INSERT INTO users(gender, age, firebase_id, wheelchair_type, created_at) VALUES(?,?,?,?, now())';
+    await pool.query(sqlQuery, [user.gender, user.age, id, user.wheelchairtype]);
     logAction("create_user", id, user);
 }
 
@@ -70,8 +70,8 @@ async function updateUser(user, id) {
     if(!exists)
         return createUser(user, id);
     console.log("Update user with id :: " + id);
-    var sqlQuery = 'UPDATE users SET gender = ?, age = ?, updated_at=now(), is_deleted = 0 WHERE firebase_id = ?';
-    await pool.query(sqlQuery, [user.gender, user.age, id]);
+    var sqlQuery = 'UPDATE users SET gender = ?, age = ?, wheelchair_type=?, updated_at=now(), is_deleted = 0 WHERE firebase_id = ?';
+    await pool.query(sqlQuery, [user.gender, user.age, user.wheelchairtype, id]);
     logAction("update_user", id, user);
 }
 
@@ -161,6 +161,9 @@ exports.usersCounter = functions.firestore
 
 //     ALTER TABLE `wheelchair_routing`.`users` 
 // ADD COLUMN `is_deleted` TINYINT(1) NOT NULL DEFAULT 0 AFTER `age`;
+// ALTER TABLE `wheelchair_routing`.`users` 
+// ADD COLUMN `wheelchair_type` VARCHAR(255) NULL AFTER `age`;
+
 
 
 // CREATE TABLE `wheelchair_routing`.`logs` (
