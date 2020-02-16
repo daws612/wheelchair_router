@@ -48,6 +48,7 @@ exports.helloWorld = functions.https.onRequest(async (request, response) => {
 });
 
 async function userExists(id) {
+    console.log(" Check if user with id " + id + " exists. ");
     var sqlQuery = 'SELECT * FROM users WHERE firebase_id = ?';
     var result = await pool.query(sqlQuery, [id]);
     console.log(" User " + id + " Exists? " + result.length > 0);
@@ -55,7 +56,8 @@ async function userExists(id) {
 }
 
 async function createUser(user, id) {
-    if(userExists)
+    const exists = await userExists(id);
+    if(exists)
         return updateUser(user, id);
     console.log("Create user with id :: " + id);
     var sqlQuery = 'INSERT INTO users(gender, age, firebase_id, created_at) VALUES(?,?,?, now())';
@@ -64,7 +66,8 @@ async function createUser(user, id) {
 }
 
 async function updateUser(user, id) {
-    if(!userExists)
+    const exists = await userExists(id);
+    if(!exists)
         return createUser(user, id);
     console.log("Update user with id :: " + id);
     var sqlQuery = 'UPDATE users SET gender = ?, age = ?, updated_at=now(), is_deleted = 0 WHERE firebase_id = ?';
@@ -73,7 +76,8 @@ async function updateUser(user, id) {
 }
 
 async function deleteUser(user, id) {
-    if(!userExists)
+    const exists = await userExists(id);
+    if(!exists)
         return;
     console.log("Delete user with id :: " + id);
     var sqlQuery = 'UPDATE users SET is_deleted = 1, updated_at=now() WHERE firebase_id = ?';
