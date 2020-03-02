@@ -58,6 +58,7 @@ function fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, d
                 if (cobj == undefined) {
                     console.error('Google Directions API call did not return successfully. Something is wrong');
                     resolve('');
+                    return;
                 }
 
                 console.log(util.format('Successfully returned from google api %s \n', googleUrl));
@@ -88,11 +89,16 @@ function fetchDataFromCache(origin, destination, tableName, fieldName, googleUrl
             } else {
                 if (fieldName === "polyline_json")
                     resolve(queryResult[0].polyline_json);
-                else if (fieldName === "elevation_json")
-                    resolve(queryResult[0].elevation_json)
+                else if (fieldName === "elevation_json") {
+                    if (queryResult[0].elevation_json == "null"){
+                        await pool.query(util.format('DELETE FROM %s WHERE origin = "%s" AND destination = "%s"', tableName, origin, destination));
+                        resolve(fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, directionsMode));
+                    } else
+                        resolve(queryResult[0].elevation_json)
+                }
                 else
                     resolve(queryResult);
-                    
+
             }
         });
 
@@ -107,10 +113,14 @@ async function saveCacheData(origin, destination, cobj, tableName, fieldName, di
     var sqlQuery;
     if (fieldName === "polyline_json")
         sqlQuery = util.format('INSERT INTO %s(origin,destination,%s,mode) VALUES(?,?,?,"%s")', tableName, fieldName, directionsMode);
-    else
-        sqlQuery = util.format('INSERT INTO %s(origin,destination,%s) VALUES(?,?,?)', tableName, fieldName);
+    else {
+        if (cobj.status === "OK")
+            sqlQuery = util.format('INSERT INTO %s(origin,destination,%s) VALUES(?,?,?)', tableName, fieldName);
+        else
+            return;
+    }
     await pool.query(sqlQuery, [origin, destination, JSON.stringify(cobj)]);
-    
+
 }
 
 async function getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon) {
@@ -120,10 +130,10 @@ async function getSidewalkOrWalkingDirections(originlat, originlon, destlat, des
 
     console.log("Get sidewalk directions.");
     var sidewalkDirs = await pgRoute.getSidewalkDirections(originlat, originlon, destlat, destlon);
-    if(sidewalkDirs === 'undefined' || sidewalkDirs.length == 0) {
+    if (sidewalkDirs === 'undefined' || sidewalkDirs.length == 0) {
         console.log("Get walking route.");
         var walkingDirections = await getElevation.getWalkingDirections(originHttp, destinationHttp, true);
-        if(walkingDirections === 'undefined' || walkingDirections.length == 0)
+        if (walkingDirections === 'undefined' || walkingDirections.length == 0)
             console.log("No walking directions found");
         return walkingDirections;
     } else {

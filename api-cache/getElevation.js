@@ -81,17 +81,20 @@ async function getElevation(originHttp, destinationHttp, route) {
                 var origin = path[p].latitude + "," + path[p].longitude;
                 var destination = path[p + 1].latitude + "," + path[p + 1].longitude;
 
-                var googleUrlElevation = config.google.elevation.url + util.format('?path=%s|%s&samples=2&mode=walking&key=%s', origin, destination, config.google.apikey);
-                var elevResult = await commons.fetchDataFromCache(origin, destination, "elevation_path", "elevation_json", googleUrlElevation, "walking");
-                var elevation = JSON.parse(elevResult);
+                // var googleUrlElevation = config.google.elevation.url + util.format('?path=%s|%s&samples=2&mode=walking&key=%s', origin, destination, config.google.apikey);
+                // var elevResult = await commons.fetchDataFromCache(origin, destination, "elevation_path", "elevation_json", googleUrlElevation, "walking");
+                // var elevation = JSON.parse(elevResult);
 
-                var run = getDistance(path[p], path[p + 1]);
-                var rise = elevation.results[1].elevation - elevation.results[0].elevation; // if negative, down slope
-                var slope = (rise / run) * 100.0;
-                if (slope === 0)
-                        slope = 0.01;
+                // var run = getDistance(path[p], path[p + 1]);
+                // var rise = elevation.results[1].elevation - elevation.results[0].elevation; // if negative, down slope
+                // var slope = (rise / run) * 100.0;
+                // if (slope === 0)
+                //     slope = 0.01;
 
-                elevation = elevation.results;
+                var calc = await calculateSlope(path[p].latitude, path[p].longitude, path[p + 1].latitude , path[p + 1].longitude);
+
+                elevation = calc.elevation.results;
+                var slope = calc.slope;
                 pathData.push({ origin, destination, elevation, slope });
             }
 
@@ -110,6 +113,29 @@ async function getElevation(originHttp, destinationHttp, route) {
     });
 
 }
+
+async function calculateSlope(originlat, originlon, destinationlat, destinationlon) {
+    try{
+        var origin = originlat + "," + originlon;
+        var destination = destinationlat + "," + destinationlon;
+    
+        var googleUrlElevation = config.google.elevation.url + util.format('?path=%s|%s&samples=2&mode=walking&key=%s', origin, destination, config.google.apikey);
+        var elevResult = await commons.fetchDataFromCache(origin, destination, "elevation_path", "elevation_json", googleUrlElevation, "walking");
+        var elevation = JSON.parse(elevResult);
+    
+        var run = getDistance(originlat, originlon, destinationlat, destinationlon);
+        var rise = elevation.results[1].elevation - elevation.results[0].elevation; // if negative, down slope
+        var slope = (rise / run) * 100.0;
+        if (slope === 0)
+            slope = 0.01;
+    
+        return {slope: slope, elevation: elevation};
+    } catch(e){
+        console.log(e);
+        return -1;
+    }
+}
+
 // source: http://doublespringlabs.blogspot.com.br/2012/11/decoding-polylines-from-google-maps.html
 function decode(encoded) {
 
@@ -150,12 +176,12 @@ var rad = function (x) {
     return x * Math.PI / 180;
 };
 
-var getDistance = function (p1, p2) {
+var getDistance = function (p1Lat, p1Lon, p2Lat, p2Lon) {
     var R = 6378137; // Earth’s mean radius in meter
-    var dLat = rad(p2.latitude - p1.latitude);
-    var dLong = rad(p2.longitude - p1.longitude);
+    var dLat = rad(p2Lat - p1Lat);
+    var dLong = rad(p2Lon - p1Lon);
     var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(rad(p1.latitude)) * Math.cos(rad(p2.latitude)) *
+        Math.cos(rad(p1Lat)) * Math.cos(rad(p2Lat)) *
         Math.sin(dLong / 2) * Math.sin(dLong / 2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     var d = R * c;
@@ -164,6 +190,7 @@ var getDistance = function (p1, p2) {
 
 module.exports.httpGetElevation = httpGetElevation;
 module.exports.getWalkingDirections = getWalkingDirections;
+module.exports.calculateSlope = calculateSlope;
 
 /*
 CREATE TABLE `wheelchair_routing`.`elevation_path` (

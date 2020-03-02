@@ -4,7 +4,7 @@ class PermissionsService {
   final PermissionHandler _permissionHandler = new PermissionHandler();
 
   Future<bool> requestPermission(List<PermissionGroup> _permissionGroup) async {
-    var result = await _permissionHandler.requestPermissions(_permissionGroup);
+    await _permissionHandler.requestPermissions(_permissionGroup);
     var checkIfAllGranted = await getPermissionsToAsk(_permissionGroup);
     if (checkIfAllGranted.length == 0) return true;
     return false;
