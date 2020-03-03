@@ -29,6 +29,16 @@ class UserService {
     );
   }
 
+  static Future<String>getFirebaseUserId() async {
+    try {
+      final FirebaseUser _anonUser = await _auth.signInAnonymously();
+      return _anonUser.uid;
+    } catch (ex) {
+      print(ex);
+      return "";
+    }
+  }
+
   static Future<bool> anonymousLogin() async {
     try {
       final FirebaseUser _anonUser = await _auth.signInAnonymously();
