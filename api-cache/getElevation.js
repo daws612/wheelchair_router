@@ -50,8 +50,14 @@ async function getWalkingDirections(originHttp, destinationHttp, allOptions) {
 
 async function getElevation(originHttp, destinationHttp, route) {
     return new Promise(async (resolve, reject) => {
+        var result = await commons.fetchRouteSegmentsFromDB(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk");
 
-        var result = { polyline: "", pathData: "", distance: "", duration: "" };
+        if (result.length > 0) {
+            resolve(result);
+            return;
+        }
+
+        result = { polyline: "", pathData: "", distance: "", duration: "" };
 
         try {
             var legs = route.legs;
@@ -72,6 +78,7 @@ async function getElevation(originHttp, destinationHttp, route) {
 
             //decode the polyline to get the points on the route
             var path = decode(polyline);
+            var routeid = await commons.saveRouteInfo(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk");
 
             //get elevation between each 2 consecutive points on a path
             var pathData = [];
@@ -91,7 +98,16 @@ async function getElevation(originHttp, destinationHttp, route) {
                 // if (slope === 0)
                 //     slope = 0.01;
 
-                var calc = await calculateSlope(path[p].latitude, path[p].longitude, path[p + 1].latitude , path[p + 1].longitude);
+                var calc = await calculateSlope(path[p].latitude, path[p].longitude, path[p + 1].latitude, path[p + 1].longitude);
+
+                var proc = `CALL izmit.saveRouteInfo($1, $2, $3, $4, $5, $6, $7, $8)`;
+
+                console.log("Add segment -- " + i + " :: " + path[p].latitude + path[p].longitude + path[p + 1].latitude + path[p + 1].longitude);
+                commons.pgPool.query(proc, [path[p].latitude, path[p].longitude, path[p + 1].latitude, path[p + 1].longitude, calc.slope, i, 0, routeid], (error, segments) => {
+                    if (error) {
+                        console.log(error);
+                    }
+                });
 
                 elevation = calc.elevation.results;
                 var slope = calc.slope;
@@ -115,22 +131,22 @@ async function getElevation(originHttp, destinationHttp, route) {
 }
 
 async function calculateSlope(originlat, originlon, destinationlat, destinationlon) {
-    try{
+    try {
         var origin = originlat + "," + originlon;
         var destination = destinationlat + "," + destinationlon;
-    
+
         var googleUrlElevation = config.google.elevation.url + util.format('?path=%s|%s&samples=2&mode=walking&key=%s', origin, destination, config.google.apikey);
         var elevResult = await commons.fetchDataFromCache(origin, destination, "elevation_path", "elevation_json", googleUrlElevation, "walking");
         var elevation = JSON.parse(elevResult);
-    
+
         var run = getDistance(originlat, originlon, destinationlat, destinationlon);
         var rise = elevation.results[1].elevation - elevation.results[0].elevation; // if negative, down slope
         var slope = (rise / run) * 100.0;
         if (slope === 0)
             slope = 0.01;
-    
-        return {slope: slope, elevation: elevation};
-    } catch(e){
+
+        return { slope: slope, elevation: elevation };
+    } catch (e) {
         console.log(e);
         return -1;
     }

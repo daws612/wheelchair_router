@@ -212,6 +212,9 @@ async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, neare
                 var fromLastStop = await commons.getSidewalkOrWalkingDirections(routeStops[routeStops.length - 1].stop_lat, routeStops[routeStops.length - 1].stop_lon, destlat, destlon);
                 routes[k]["fromLastStop"] = fromLastStop;
             }
+
+            //save route in db for later rating reference
+            await commons.saveRouteInfo(origin.stop_lat, origin.stop_lon, destination.stop_lat, destination.stop_lon, "bus-" + routes[k].route_short_name);
         } //for routes
     }//if routes
     if (routes.length > 0)

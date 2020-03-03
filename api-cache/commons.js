@@ -4,6 +4,15 @@ const mysql = require('mysql');
 var restify_clients = require('restify-clients');
 const getElevation = require('./getElevation');
 const pgRoute = require('./pgRoute');
+const PGPool = require('pg').Pool;
+
+const pgPool = new PGPool({
+    user: config.schema.user,
+    host: config.schema.host,
+    database: config.schema.db,
+    password: config.schema.password,
+    port: 5432,
+});
 
 var pool = mysql.createPool({
     connectionLimit: 100,
@@ -90,7 +99,7 @@ function fetchDataFromCache(origin, destination, tableName, fieldName, googleUrl
                 if (fieldName === "polyline_json")
                     resolve(queryResult[0].polyline_json);
                 else if (fieldName === "elevation_json") {
-                    if (queryResult[0].elevation_json == "null"){
+                    if (queryResult[0].elevation_json == "null") {
                         await pool.query(util.format('DELETE FROM %s WHERE origin = "%s" AND destination = "%s"', tableName, origin, destination));
                         resolve(fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, directionsMode));
                     } else
@@ -128,20 +137,107 @@ async function getSidewalkOrWalkingDirections(originlat, originlon, destlat, des
     var originHttp = originlat + "," + originlon;
     var destinationHttp = destlat + "," + destlon;
 
-    console.log("Get sidewalk directions.");
+    //console.log("Get sidewalk directions.");
     var sidewalkDirs = await pgRoute.getSidewalkDirections(originlat, originlon, destlat, destlon);
     if (sidewalkDirs === 'undefined' || sidewalkDirs.length == 0) {
-        console.log("Get walking route.");
+        console.log("No sidewalk route found.");
         var walkingDirections = await getElevation.getWalkingDirections(originHttp, destinationHttp, true);
         if (walkingDirections === 'undefined' || walkingDirections.length == 0)
             console.log("No walking directions found");
+        else
+            console.log("Return walking route");
         return walkingDirections;
     } else {
+        console.log("Return sidewalk route");
         return sidewalkDirs;
     }
+}
+
+async function saveRouteInfo(originlat, originlon, destlat, destlon, routeName) {
+    //Save to db if first time queried
+    //insert route details
+    var route = "INSERT INTO izmit.routes(orig_lat, orig_lon, dest_lat, dest_lon, route_name, distance) values( " +
+        "$1, $2, " +
+        "$3, $4, $5, " +
+        "ST_Distance( " +
+        " ST_SetSRID(ST_MakePoint($2, $1), 4326), " +
+        "ST_SetSRID(ST_MakePoint($4, $3), 4326), " +
+        "true " +
+        ") " +
+        ") ON CONFLICT (orig_lat, orig_lon, dest_lat, dest_lon, route_name) DO NOTHING RETURNING route_id ;";
+
+    var routeid = await pgPool.query(route, [+originlat, +originlon, +destlat, +destlon, routeName]);
+    if (routeid.rows.length < 1) {
+        route = "SELECT route_id FROM izmit.routes " +
+            " WHERE orig_lon = $1 AND orig_lat = $2 " +
+            " AND dest_lon = $3 AND dest_lat = $4;"
+        routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat]);
+    }
+
+    routeid = routeid.rows[0].route_id;
+
+    return routeid;
+}
+
+async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, routeName) {
+
+    var result = [];
+
+    var route = "SELECT route_id FROM izmit.routes " +
+        " WHERE orig_lon = $1 AND orig_lat = $2 " +
+        " AND dest_lon = $3 AND dest_lat = $4 AND route_name=$5;"
+    var routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat, routeName]);
+
+    if (routeid.rowCount == 0)
+        return result;
+
+    routeid = routeid.rows[0].route_id;
+
+    var segmentsQu = "SELECT start_lat as y1, start_lon as x1, end_lat as y2, end_lon as x2, incline, length FROM izmit.route_segments rs " +
+        " JOIN izmit.segments seg ON seg.segment_id = rs.segment_id " +
+        " WHERE route_id = $1 " +
+        " order by sequence;";
+
+    var segments = await pgPool.query(segmentsQu, [routeid]);
+
+    if (segments.rowCount == 0)
+        return result;
+
+    var response = formatResult(segments.rows);
+    if (response.pathData.length > 0)
+        result.push(response);
+
+    return result;
+}
+
+function formatResult(results) {
+
+    var path = [];
+    var distance =0;
+    for (i = 0; i < results.length; i++) {
+        var origin = { lat: results[i].y1, lng: results[i].x1 };
+        var destination = { lat: results[i].y2, lng: results[i].x2 };
+        var startElv = { location: origin, elevation: "", resolution: "" };
+        var endElv = { location: destination, elevation: "", resolution: "" };
+
+        var pathData = { origin: origin.lat + "," + origin.lng, destination: destination.lat + "," + destination.lng, elevation: [startElv, endElv], slope: results[i].incline };
+
+        path.push(pathData);
+        distance = distance + results[i]['length'];
+    }
+
+    //assuming speed is 1.4meters/sec
+    var duration = distance / 1.4;
+
+    var response = { polyline: "", pathData: path, distance: Math.ceil( distance ), duration: Math.ceil( duration ) };
+    return response;
 }
 
 module.exports.pool = pool;
 module.exports.fetchFromGoogle = fetchFromGoogle;
 module.exports.fetchDataFromCache = fetchDataFromCache;
 module.exports.getSidewalkOrWalkingDirections = getSidewalkOrWalkingDirections;
+module.exports.saveRouteInfo = saveRouteInfo;
+module.exports.pgPool = pgPool;
+module.exports.fetchRouteSegmentsFromDB = fetchRouteSegmentsFromDB;
+module.exports.formatResult = formatResult;
