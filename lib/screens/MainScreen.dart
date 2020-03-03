@@ -34,9 +34,10 @@ DirectionsAPI.GoogleMapsDirections directions =
     DirectionsAPI.GoogleMapsDirections(apiKey: Const.Constants.kGoogleApiKey);
 
 class MainScreen extends StatefulWidget {
-  MainScreen({this.title});
+  MainScreen({this.title, this.firebaseUserId});
 
   final String title;
+  final String firebaseUserId;
 
   @override
   State<StatefulWidget> createState() => MainScreenState();
@@ -156,7 +157,10 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
 
   void _setupLocationLoggingTimer() {
     Timer.periodic(Duration(seconds: 10), (timer) { 
-      UserLocationLoggerService.logCurrentLocation("currentLocation", "origin", "destination");
+      String origin = _markers.containsKey("Origin") ? _markers["Origin"].position.toString() : "";
+      String destination = _markers.containsKey("Destination") ? _markers["Destination"].position.toString() : "";
+      
+      UserLocationLoggerService.logCurrentLocation(_geolocator, origin, destination);
     });
   }
 
