@@ -183,7 +183,8 @@ async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, 
 
     var result = [];
 
-    var route = "SELECT route_id FROM izmit.routes " +
+    var route = "SELECT r.route_id, coalesce(rr.rating, 0) as rating FROM izmit.routes r " +
+        " LEFT JOIN izmit.route_ratings rr ON r.route_id = rr.route_id " +
         " WHERE orig_lon = $1 AND orig_lat = $2 " +
         " AND dest_lon = $3 AND dest_lat = $4 AND route_name=$5;"
     var routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat, routeName]);
@@ -191,6 +192,7 @@ async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, 
     if (routeid.rowCount == 0)
         return result;
 
+    var rating = routeid.rows[0].rating;
     routeid = routeid.rows[0].route_id;
 
     var segmentsQu = "SELECT start_lat as y1, start_lon as x1, end_lat as y2, end_lon as x2, incline, length FROM izmit.route_segments rs " +
@@ -203,14 +205,14 @@ async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, 
     if (segments.rowCount == 0)
         return result;
 
-    var response = formatResult(segments.rows);
+    var response = formatResult(segments.rows, rating);
     if (response.pathData.length > 0)
         result.push(response);
 
     return result;
 }
 
-function formatResult(results) {
+function formatResult(results, rating) {
 
     var path = [];
     var distance =0;
@@ -229,7 +231,7 @@ function formatResult(results) {
     //assuming speed is 1.4meters/sec
     var duration = distance / 1.4;
 
-    var response = { polyline: "", pathData: path, distance: Math.ceil( distance ), duration: Math.ceil( duration ) };
+    var response = { polyline: "", pathData: path, distance: Math.ceil( distance ), duration: Math.ceil( duration ), rating: rating };
     return response;
 }
 

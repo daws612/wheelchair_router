@@ -10,7 +10,8 @@
 --     orig_lat double precision NOT NULL,
 --     orig_lon double precision NOT NULL,
 --     CONSTRAINT routes_pkey PRIMARY KEY (route_id),
---     CONSTRAINT origin_destination_unique UNIQUE (dest_lat, dest_lon, orig_lat, orig_lon)
+--     CONSTRAINT origin_destination_name_unique UNIQUE (dest_lat, dest_lon, orig_lat, orig_lon, route_name)
+
 -- )
 -- WITH (
 --     OIDS = FALSE
@@ -132,48 +133,48 @@
 -- $BODY$;
 
 
--- ----- 
---     ogr2ogr -f "PostgreSQL" PG:"dbname=wheelchair_routing schemas=izmit user=postgres" "/home/firdaws/Documents/Thesis/izmit_sidewalk_geojson.geojson"
+----- 
+    -- ogr2ogr -f "PostgreSQL" PG:"dbname=wheelchair_routing schemas=izmit user=postgres" "/home/firdaws/Documents/Thesis/izmit_sidewalk_geojson.geojson"
 
--- ------
+------
 
--- -- ALTER TABLE izmit.izmit
--- --     ADD COLUMN source bigint,
--- --     ADD COLUMN target bigint,
--- --     ADD COLUMN cost_len double precision,
--- --     ADD COLUMN cost_time double precision,
--- --     ADD COLUMN rcost_len double precision,
--- --     ADD COLUMN rcost_time double precision,
--- --     ADD COLUMN x1 double precision,
--- --     ADD COLUMN y1 double precision,
--- --     ADD COLUMN x2 double precision,
--- --     ADD COLUMN y2 double precision,
--- --     ADD COLUMN to_cost double precision,
--- --     ADD COLUMN rule text,
--- --     ADD COLUMN isolated integer;
+-- ALTER TABLE izmit.izmit
+--     ADD COLUMN source bigint,
+--     ADD COLUMN target bigint,
+--     ADD COLUMN cost_len double precision,
+--     ADD COLUMN cost_time double precision,
+--     ADD COLUMN rcost_len double precision,
+--     ADD COLUMN rcost_time double precision,
+--     ADD COLUMN x1 double precision,
+--     ADD COLUMN y1 double precision,
+--     ADD COLUMN x2 double precision,
+--     ADD COLUMN y2 double precision,
+--     ADD COLUMN to_cost double precision,
+--     ADD COLUMN rule text,
+--     ADD COLUMN isolated integer;
 	
--- --   UPDATE izmit.izmit SET x1 = ST_X(ST_startpoint(ST_geometryn(wkb_geometry,1)));
--- --   UPDATE izmit.izmit SET y1 = ST_Y(ST_startpoint(ST_geometryn(wkb_geometry,1)));
--- --   UPDATE izmit.izmit SET x2 = ST_X(ST_endpoint(ST_geometryn(wkb_geometry,1)));
--- --   UPDATE izmit.izmit SET y2 = ST_Y(ST_endpoint(ST_geometryn(wkb_geometry,1)));
+--   UPDATE izmit.izmit SET x1 = ST_X(ST_startpoint(ST_geometryn(wkb_geometry,1)));
+--   UPDATE izmit.izmit SET y1 = ST_Y(ST_startpoint(ST_geometryn(wkb_geometry,1)));
+--   UPDATE izmit.izmit SET x2 = ST_X(ST_endpoint(ST_geometryn(wkb_geometry,1)));
+--   UPDATE izmit.izmit SET y2 = ST_Y(ST_endpoint(ST_geometryn(wkb_geometry,1)));
 
--- -- UPDATE izmit.izmit SET cost_time = st_lengthspheroid(ST_geometryn(wkb_geometry,1), 'SPHEROID["WGS84",6378137,298.25728]')/16;
--- -- UPDATE izmit.izmit SET rcost_time = st_lengthspheroid(ST_geometryn(wkb_geometry,1), 'SPHEROID["WGS84",6378137,298.25728]')/16;
+-- UPDATE izmit.izmit SET cost_time = st_lengthspheroid(ST_geometryn(wkb_geometry,1), 'SPHEROID["WGS84",6378137,298.25728]')/16;
+-- UPDATE izmit.izmit SET rcost_time = st_lengthspheroid(ST_geometryn(wkb_geometry,1), 'SPHEROID["WGS84",6378137,298.25728]')/16;
 
--- -- VACUUM ANALYZE  izmit.izmit;
+-- VACUUM ANALYZE  izmit.izmit;
   
--- -- select pgr_createTopology('izmit.izmit', 0.000001, the_geom:='wkb_geometry', id:='id');
--- -- select pgr_analyzegraph('izmit.izmit', 0.000001,  the_geom:='wkb_geometry', id:='id');
+-- select pgr_createTopology('izmit.izmit', 0.000001, the_geom:='wkb_geometry', id:='id');
+-- select pgr_analyzegraph('izmit.izmit', 0.000001,  the_geom:='wkb_geometry', id:='id');
 
--- -- ALTER TABLE izmit.izmit
--- --  ALTER COLUMN wkb_geometry TYPE geometry(LineString,4326)
--- --   USING ST_LineMerge(wkb_geometry);
+-- ALTER TABLE izmit.izmit
+--  ALTER COLUMN wkb_geometry TYPE geometry(LineString,4326)
+--   USING ST_LineMerge(wkb_geometry);
   
--- -- select pgr_nodeNetwork('izmit.izmit', 0.01, the_geom:='wkb_geometry', id:='id'); -- WORKING after alter
+-- select pgr_nodeNetwork('izmit.izmit', 0.01, the_geom:='wkb_geometry', id:='id'); -- WORKING after alter
 
--- -- select pgr_createTopology('izmit.izmit_noded', 0.000001, the_geom:='wkb_geometry', id:='id');
--- -- delete from izmit.izmit_noded where source is null;
+-- select pgr_createTopology('izmit.izmit_noded', 0.000001, the_geom:='wkb_geometry', id:='id');
+-- delete from izmit.izmit_noded where source is null;
 
--- -- select pgr_createVerticesTable('izmit.izmit_noded','wkb_geometry','source','target');
--- -- select pgr_analyzegraph('izmit.izmit_noded', 0.000001,  the_geom:='wkb_geometry', id:='id');
--- -- select pgr_analyzeOneway('izmit.izmit_noded', 0.000001,  the_geom:='wkb_geometry', id:='id');
+-- select pgr_createVerticesTable('izmit.izmit_noded','wkb_geometry','source','target');
+-- select pgr_analyzegraph('izmit.izmit_noded', 0.000001,  the_geom:='wkb_geometry', id:='id');
+-- select pgr_analyzeOneway('izmit.izmit_noded', 0.000001,  the_geom:='wkb_geometry', id:='id');

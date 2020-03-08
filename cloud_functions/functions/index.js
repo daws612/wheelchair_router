@@ -8,6 +8,15 @@ const FieldValue = require('firebase-admin').firestore.FieldValue;
 const config = require('./config');
 const util = require('util');
 const mysql = require('mysql');
+const PGPool = require('pg').Pool;
+
+const pgPool = new PGPool({
+    user: config.schema.user,
+    host: config.schema.host,
+    database: config.schema.db,
+    password: config.schema.password,
+    port: 5432,
+});
 
 var pool = mysql.createPool({
     connectionLimit: 100,
@@ -39,20 +48,22 @@ pool.getConnection((err, connection) => {
 
 // Promisify for Node.js async/await.
 pool.query = util.promisify(pool.query);
+pgPool.query = util.promisify(pgPool.query);
 
 exports.helloWorld = functions.https.onRequest(async (request, response) => {
-    var sqlQuery = util.format('SELECT * from polyline_path limit 2');
-    var queryResult = await pool.query(sqlQuery);
+    var id = "XJADPht6W9Ui2pQRGzwgKknTZWG3";
+    var sqlQuery = 'SELECT * FROM izmit.users WHERE firebase_id = $1;';
+    var queryResult = await pgPool.query(sqlQuery, [id]);
     response.send(queryResult);
 
 });
 
 async function userExists(id) {
     console.log(" Check if user with id " + id + " exists. ");
-    var sqlQuery = 'SELECT * FROM users WHERE firebase_id = ?';
-    var result = await pool.query(sqlQuery, [id]);
-    console.log(" User " + id + " Exists? " + result.length > 0);
-    return result.length > 0;
+    var sqlQuery = 'SELECT * FROM izmit.users WHERE firebase_id = $1';
+    var result = await pgPool.query(sqlQuery, [id]);
+    console.log(" User " + id + " Exists? " + result.rowCount > 0);
+    return result.rowCount > 0;
 }
 
 async function createUser(user, id) {
@@ -60,8 +71,8 @@ async function createUser(user, id) {
     if(exists)
         return updateUser(user, id);
     console.log("Create user with id :: " + id);
-    var sqlQuery = 'INSERT INTO users(gender, age, firebase_id, wheelchair_type, created_at) VALUES(?,?,?,?, now())';
-    await pool.query(sqlQuery, [user.gender, user.age, id, user.wheelchairtype]);
+    var sqlQuery = 'INSERT INTO izmit.users(gender, age, firebase_id, wheelchair_type, created_at) VALUES($1,$2,$3,$4, now())';
+    await pgPool.query(sqlQuery, [user.gender, user.age, id, user.wheelchairtype]);
     logAction("create_user", id, user);
 }
 
@@ -70,8 +81,8 @@ async function updateUser(user, id) {
     if(!exists)
         return createUser(user, id);
     console.log("Update user with id :: " + id);
-    var sqlQuery = 'UPDATE users SET gender = ?, age = ?, wheelchair_type=?, updated_at=now(), is_deleted = 0 WHERE firebase_id = ?';
-    await pool.query(sqlQuery, [user.gender, user.age, user.wheelchairtype, id]);
+    var sqlQuery = 'UPDATE izmit.users SET gender = $1, age = $2, wheelchair_type=$3, updated_at=now(), is_deleted = false::boolean WHERE firebase_id = $4';
+    await pgPool.query(sqlQuery, [user.gender, user.age, user.wheelchairtype, id]);
     logAction("update_user", id, user);
 }
 
@@ -80,16 +91,16 @@ async function deleteUser(user, id) {
     if(!exists)
         return;
     console.log("Delete user with id :: " + id);
-    var sqlQuery = 'UPDATE users SET is_deleted = 1, updated_at=now() WHERE firebase_id = ?';
-    await pool.query(sqlQuery, [id]);
+    var sqlQuery = 'UPDATE izmit.users SET is_deleted = true::boolean, updated_at=now() WHERE firebase_id = $1';
+    await pgPool.query(sqlQuery, [id]);
     logAction("delete_user", id, user);
 }
 
 async function logAction(action, firebase_id, user) {
     console.log("Log " + action + " for user with firebase id " + firebase_id);
-    var query = "INSERT INTO `wheelchair_routing`.`logs` (`user_id`, `log_id`, `timestamp`, `description`) " +
-        "VALUES ((SELECT id FROM users WHERE firebase_id = ?), (SELECT id FROM log_types WHERE log_type = ?), now(), ?);";
-    await pool.query(query, [firebase_id, action, JSON.stringify(user)]);
+    var query = "INSERT INTO izmit.logs (user_id, log_id, timestamp, description) " +
+        "VALUES ((SELECT User_id FROM izmit.users WHERE firebase_id = $1), (SELECT id FROM izmit.log_types WHERE log_type = $2), now(), $3);";
+    await pgPool.query(query, [firebase_id, action, JSON.stringify(user)]);
 }
 
 const firestore = admin.firestore();

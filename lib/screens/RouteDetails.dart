@@ -6,12 +6,13 @@ import 'package:routing/screens/WalkingDirections.dart';
 import 'BusRouteDetails.dart';
 
 class RouteDetails extends StatelessWidget {
-  RouteDetails({Key key, this.allRoutes, this.radioValue, this.onClicked})
+  RouteDetails({Key key, this.allRoutes, this.radioValue, this.onClicked, this.rateRouteClicked})
       : super(key: key);
 
   final AllRoutesJSON allRoutes;
   final int radioValue;
   final Function(int) onClicked;
+  final Function(int, bool) rateRouteClicked;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +39,9 @@ class RouteDetails extends StatelessWidget {
                         radioValue: radioValue,
                         onClicked: (value) {
                           onClicked(value);
+                        },
+                        rateRouteClicked: (value, isBus) {
+                          rateRouteClicked(value, isBus);
                         },
                       );
                     })),
@@ -67,6 +71,9 @@ class RouteDetails extends StatelessWidget {
                           onClicked: (value) {
                             onClicked(value);
                           },
+                        rateRouteClicked: (value, isBus) {
+                          rateRouteClicked(value, isBus);
+                        },
                         );
                       }))
             ],

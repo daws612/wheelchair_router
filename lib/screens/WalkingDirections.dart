@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:routing/models/AllRoutesJSON.dart';
 
 class WalkingDirections extends StatelessWidget {
-  WalkingDirections({Key key, this.route, this.radioValue, this.onClicked})
+  WalkingDirections({Key key, this.route, this.radioValue, this.onClicked, this.rateRouteClicked})
       : super(key: key);
 
   final WalkPathJSON route;
   final int radioValue;
   final Function(int) onClicked;
+  final Function(int, bool) rateRouteClicked;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +84,30 @@ class WalkingDirections extends StatelessWidget {
                                     //     )),
                                   ],
                                 )),
-                          )
+                          ),
+                          Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: <Widget>[
+                                GestureDetector(
+                                  onTap: () {
+                                    rateRouteClicked(route.routeIndex, false);
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.fromLTRB(5, 5, 15, 20),
+                                    child: CircleAvatar(
+                                      radius: 15.0,
+                                      backgroundColor:
+                                          Theme.of(context).primaryColor,
+                                      child: Icon(
+                                        Icons.star,
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                
+                              ]),
                         ])))));
   }
 

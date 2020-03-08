@@ -5,9 +5,9 @@ const getElevation = require('./getElevation');
 const pgRoute = require('./pgRoute');
 
 async function performRouting(req, res, next) {
-    var response = {busRoutes: "", walkingDirections: ""};
+    var response = { busRoutes: "", walkingDirections: "" };
 
-    try{
+    try {
 
         var params = req.query;
         var originlat = +params.originlat;
@@ -24,10 +24,10 @@ async function performRouting(req, res, next) {
         response.busRoutes = busRoutes;
 
         res.send(response);
-    }catch (ex) {
+    } catch (ex) {
         console.error('Unexpected exception occurred when trying to get directions \n' + ex);
         res.send(ex);
-    } 
+    }
 
 }
 
@@ -67,12 +67,12 @@ async function getBusRoutes(originlat, originlon, destlat, destlon) {
         while (result.length < maxNumberOfOptions && pageStart < nearestOrigin.length) {
 
             result = await createRouteDetails(originlat, originlon, destlat, destlon, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions);
-            
+
             if (result.length < maxNumberOfOptions) {
                 pageStart = pageEnd;
                 pageEnd = pageEnd + pageSize;
             } else
-                break;   
+                break;
         }
 
         console.log('\nSuccessfully complete routing request');
@@ -89,14 +89,14 @@ async function getBusRoutes(originlat, originlon, destlat, destlon) {
 async function createRouteDetails(originlat, originlon, destlat, destlon, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
     for (var i = pageStart; i < nearestOrigin.length && i < pageEnd; i++) {
         for (var j = 0; j < nearestDest.length && j < pageEnd; j++) {
-            if(result.length >= maxNumberOfOptions){
+            if (result.length >= maxNumberOfOptions) {
                 i = nearestOrigin.length;
                 j = nearestDest.length;
                 break;
             }
             result = await fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions)
-            
-            
+
+
         } //for dest
     }// for origin
 
@@ -106,14 +106,14 @@ async function createRouteDetails(originlat, originlon, destlat, destlon, pageSt
     if (result.length < maxNumberOfOptions && pageEnd >= nearestOrigin.length && pageEnd < nearestDest.length) {
         for (var orgn = 0; orgn < nearestOrigin.length; orgn++) {
             for (var dstn = pageEnd; dstn < nearestDest.length; dstn++) {
-                if(result.length >= maxNumberOfOptions){
+                if (result.length >= maxNumberOfOptions) {
                     orgn = nearestOrigin.length;
                     dstn = nearestDest.length;
                     break;
                 }
 
                 result = await fetchDBRoutes(originlat, originlon, destlat, destlon, orgn, dstn, nearestOrigin, nearestDest, result, maxNumberOfOptions)
-                
+
             }
         }
     }
@@ -143,8 +143,8 @@ async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, neare
         "a.stop_id = ? " +
         "and b.stop_id = ? " +
         "and a.trip_id = b.trip_id " +
-        //"and a.departure_time between '09:00' and TIME(DATE_ADD('2019-01-07 09:00', INTERVAL 15 MINUTE)) " +
-        "and a.departure_time between current_time() and TIME(DATE_ADD(now(), INTERVAL 30 MINUTE)) " +
+        "and a.departure_time between '09:00' and TIME(DATE_ADD('2019-01-07 09:00', INTERVAL 15 MINUTE)) " +
+        //"and a.departure_time between current_time() and TIME(DATE_ADD(now(), INTERVAL 30 MINUTE)) " +
         "and t.service_id = (case  " +
         "when dayofweek(current_date()) between 2 and 6 then 1 " +
         "when dayofweek(current_date()) = 1 then 3 " +
@@ -212,6 +212,19 @@ async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, neare
                 var fromLastStop = await commons.getSidewalkOrWalkingDirections(routeStops[routeStops.length - 1].stop_lat, routeStops[routeStops.length - 1].stop_lon, destlat, destlon);
                 routes[k]["fromLastStop"] = fromLastStop;
             }
+
+            //get routing rate
+            var route = "SELECT r.route_id,  coalesce(rr.rating, 0) as rating FROM izmit.routes r " +
+                " LEFT JOIN izmit.route_ratings rr ON r.route_id = rr.route_id " +
+                " WHERE orig_lon = $1 AND orig_lat = $2 " +
+                " AND dest_lon = $3 AND dest_lat = $4 AND route_name=$5;"
+            var routeid = await commons.pgPool.query(route, [origin.stop_lon, origin.stop_lat, destination.stop_lon, destination.stop_lat, "bus-" + routes[k].route_short_name]);
+
+            var rating = 0;
+            if (routeid.rowCount > 0)
+                rating = routeid.rows[0].rating;
+
+            routes[k]["rating"] = rating;
 
             //save route in db for later rating reference
             await commons.saveRouteInfo(origin.stop_lat, origin.stop_lon, destination.stop_lat, destination.stop_lon, "bus-" + routes[k].route_short_name);

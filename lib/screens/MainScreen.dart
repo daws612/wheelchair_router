@@ -18,6 +18,7 @@ import 'package:routing/models/User.dart';
 import 'package:routing/screens/ImageViewer.dart';
 import 'package:routing/screens/PathDetails.dart';
 import 'package:routing/screens/PlacesSearchScreen.dart';
+import 'package:routing/screens/RateDialog.dart';
 import 'package:routing/screens/UserProfile.dart';
 import 'package:routing/services/DataService.dart';
 import 'package:routing/services/PermissionsService.dart';
@@ -25,6 +26,7 @@ import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
 import 'package:routing/services/UserLocationLoggerService.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
+import 'package:smooth_star_rating/smooth_star_rating.dart';
 import 'RouteDetails.dart';
 import 'package:geojson/geojson.dart';
 import 'package:flutter/services.dart' show SystemChannels, rootBundle;
@@ -74,6 +76,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   bool showCarousel = false;
   bool allPermissionsGranted = false;
 
+  double rating = 0;
+
   @override
   void dispose() {
     _originController.dispose();
@@ -84,22 +88,21 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   @override
-void didChangeAppLifecycleState(AppLifecycleState state) {
-  if(state == AppLifecycleState.resumed){
-    // user returned to our app
-  }else if(state == AppLifecycleState.inactive){
-    // app is inactive
-  }else if(state == AppLifecycleState.paused){
-    dispose();
-    // user is about quit our app temporally
-  }else if(state == AppLifecycleState.detached){
-    dispose();
-    // app suspended (not used in iOS)
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // user returned to our app
+    } else if (state == AppLifecycleState.inactive) {
+      // app is inactive
+    } else if (state == AppLifecycleState.paused) {
+      dispose();
+      // user is about quit our app temporally
+    } else if (state == AppLifecycleState.detached) {
+      dispose();
+      // app suspended (not used in iOS)
+    }
   }
-}
 
   _checkPermissions() {
-
     var storagePermission =
         Platform.isAndroid ? PermissionGroup.storage : PermissionGroup.photos;
 
@@ -109,7 +112,6 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
     ]) //check permission returns a Future
         .then((result) {
       if (result.length == 0) {
-        
         print("Permission Granted");
         showCurrentLocation();
         if (!mounted) return;
@@ -156,11 +158,16 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
   }
 
   void _setupLocationLoggingTimer() {
-    Timer.periodic(Duration(seconds: 10), (timer) { 
-      String origin = _markers.containsKey("Origin") ? _markers["Origin"].position.toString() : "";
-      String destination = _markers.containsKey("Destination") ? _markers["Destination"].position.toString() : "";
-      
-      UserLocationLoggerService.logCurrentLocation(_geolocator, origin, destination);
+    Timer.periodic(Duration(seconds: 10), (timer) {
+      String origin = _markers.containsKey("Origin")
+          ? _markers["Origin"].position.toString()
+          : "";
+      String destination = _markers.containsKey("Destination")
+          ? _markers["Destination"].position.toString()
+          : "";
+
+      UserLocationLoggerService.logCurrentLocation(
+          _geolocator, origin, destination);
     });
   }
 
@@ -1015,13 +1022,34 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
             //mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Expanded(
-                flex: 9,
+                flex: 10,
                 child: Text(
                   "Route Details",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.normal,
                     fontSize: 18.0,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: GestureDetector(
+                  onTap: () {
+                    _panelController.hide();
+                    _getDirections();
+                  },
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: CircleAvatar(
+                      radius: 12.0,
+                      backgroundColor: Theme.of(context).primaryColor,
+                      child: Icon(
+                        Icons.refresh,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1036,7 +1064,7 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: CircleAvatar(
-                      radius: 8.0,
+                      radius: 12.0,
                       backgroundColor: Theme.of(context).primaryColor,
                       child: Icon(
                         Icons.close,
@@ -1054,15 +1082,18 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
           ),
           Expanded(
               child: RouteDetails(
-            allRoutes: allRoutes,
-            radioValue: selectedRoute,
-            onClicked: (value) {
-              selectedRoute = value;
-              _renderRoutes();
-              if (!mounted) return;
-              setState(() {});
-            },
-          )),
+                  allRoutes: allRoutes,
+                  radioValue: selectedRoute,
+                  onClicked: (value) {
+                    selectedRoute = value;
+                    _renderRoutes();
+                    if (!mounted) return;
+                    setState(() {});
+                  },
+                  rateRouteClicked: (routeIndex, isBus) async {
+                    final Const.ConfirmAction action =
+                        await _asyncRateRouteDialog(context, routeIndex, isBus);
+                  })),
         ],
       );
     } else {
@@ -1219,7 +1250,8 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
                 width: 180,
                 child: RaisedButton(
                   onPressed: () async {
-                    await _getBusRoutes(pgMarkers[0].position, pgMarkers[1].position);
+                    await _getBusRoutes(
+                        pgMarkers[0].position, pgMarkers[1].position);
                     // AllRoutes.WalkPathJSON w =
                     //     await DataService().fetchPGRoutes(pgMarkers);
                     // _renderWalkRoute(w);
@@ -1255,5 +1287,29 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
         width: 0,
         height: 0,
       );
+  }
+
+  Future<Const.ConfirmAction> _asyncRateRouteDialog(
+      BuildContext context, int routeIndex, bool isBus) async {
+    AllRoutes.BusRoutesJSON busRoute;
+    AllRoutes.WalkPathJSON walkPath;
+    if (isBus) {
+      allRoutes.busRoutes.forEach((AllRoutes.BusRoutesJSON route) {
+        if (route != null && routeIndex == route.routeIndex) busRoute = route;
+      });
+    } else {
+      allRoutes.walkingDirections.forEach((AllRoutes.WalkPathJSON route) {
+        if (route != null && routeIndex == route.routeIndex) walkPath = route;
+      });
+    }
+
+    return showDialog<Const.ConfirmAction>(
+      context: context,
+      barrierDismissible: false, // user must tap button to close dialog!
+      builder: (BuildContext context) {
+        return RateDialog(allRoutes: this.allRoutes, routeIndex: routeIndex, isBus: isBus,);
+        
+      },
+    );
   }
 }
