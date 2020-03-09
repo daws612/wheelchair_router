@@ -40,10 +40,10 @@
 -- (
 --     user_id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
 --     name character varying(255) COLLATE pg_catalog."default",
---     firebase_id character varying(255)[] COLLATE pg_catalog."default" NOT NULL,
+--     firebase_id character varying(255) COLLATE pg_catalog."default" NOT NULL,
 --     gender character varying(255) COLLATE pg_catalog."default",
 --     age integer,
---     wheelchair_type character varying(255)[] COLLATE pg_catalog."default",
+--     wheelchair_type character varying(255) COLLATE pg_catalog."default",
 --     is_deleted boolean NOT NULL DEFAULT false,
 --     created_at timestamp without time zone,
 --     updated_at timestamp without time zone,
@@ -92,6 +92,42 @@
 --         REFERENCES izmit.users (user_id) MATCH SIMPLE
 --         ON UPDATE NO ACTION
 --         ON DELETE NO ACTION
+-- )
+-- WITH (
+--     OIDS = FALSE
+-- )
+-- TABLESPACE pg_default;
+
+-- CREATE TABLE izmit.log_types
+-- (
+--     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
+--     description text COLLATE pg_catalog."default",
+--     log_type character varying(255) COLLATE pg_catalog."default" NOT NULL,
+--     CONSTRAINT log_types_pkey PRIMARY KEY (id)
+-- )
+-- WITH (
+--     OIDS = FALSE
+-- )
+-- TABLESPACE pg_default;
+
+-- CREATE TABLE izmit.logs
+-- (
+--     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
+--     log_id bigint NOT NULL,
+--     user_id bigint NOT NULL,
+--     description text COLLATE pg_catalog."default",
+--     "timestamp" timestamp without time zone NOT NULL DEFAULT now(),
+--     CONSTRAINT logs_pkey PRIMARY KEY (id),
+--     CONSTRAINT fk_log_type FOREIGN KEY (log_id)
+--         REFERENCES izmit.log_types (id) MATCH SIMPLE
+--         ON UPDATE NO ACTION
+--         ON DELETE NO ACTION
+--         NOT VALID,
+--     CONSTRAINT fk_user_id FOREIGN KEY (user_id)
+--         REFERENCES izmit.users (user_id) MATCH SIMPLE
+--         ON UPDATE NO ACTION
+--         ON DELETE NO ACTION
+--         NOT VALID
 -- )
 -- WITH (
 --     OIDS = FALSE

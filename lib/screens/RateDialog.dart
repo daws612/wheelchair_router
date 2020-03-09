@@ -1,6 +1,11 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:routing/Constants.dart';
 import 'package:routing/models/AllRoutesJSON.dart';
+import 'package:routing/services/UserService.dart';
 import 'package:smooth_star_rating/smooth_star_rating.dart';
 
 class RateDialog extends StatefulWidget {
@@ -15,10 +20,11 @@ class RateDialog extends StatefulWidget {
 }
 
 class RateDialogState extends State<RateDialog> {
+  BusRoutesJSON busRoute;
+  WalkPathJSON walkPath;
+
   @override
   Widget build(BuildContext context) {
-    BusRoutesJSON busRoute;
-    WalkPathJSON walkPath;
     if (widget.isBus) {
       widget.allRoutes.busRoutes.forEach((BusRoutesJSON route) {
         if (route != null && widget.routeIndex == route.routeIndex)
@@ -176,9 +182,39 @@ class RateDialogState extends State<RateDialog> {
           child: const Text('RATE'),
           onPressed: () {
             Navigator.of(context).pop(ConfirmAction.ACCEPT);
+            _setRating();
           },
         )
       ],
     );
   }
+
+  _setRating() async {
+    List<Map<String, dynamic>> body = new List<Map<String, dynamic>>();
+    if (widget.isBus) {
+      body.add(new RatingJSON(dbRouteId: busRoute.dbRouteId, rating: busRoute.rating).toJson());
+      body.add(new RatingJSON(dbRouteId: busRoute.toFirstStop[0].dbRouteId, rating: busRoute.toFirstStop[0].rating).toJson());
+      body.add(new RatingJSON(dbRouteId: busRoute.fromLastStop[0].dbRouteId, rating: busRoute.fromLastStop[0].rating).toJson());
+    } else {
+      body.add(new RatingJSON(dbRouteId: walkPath.dbRouteId, rating: walkPath.rating).toJson());
+    }
+
+    FirebaseUser user = await UserService.currentUser();
+
+    Response response =
+        await Dio().post("http://192.168.43.239:9595/saveRating", data: {"rating": body, "firebaseId": user.uid});
+    if (response.statusCode == 200) {}
+  }
+}
+
+class RatingJSON {
+  double rating;
+  String dbRouteId;
+
+  RatingJSON({this.dbRouteId, this.rating});
+
+  Map<String, dynamic> toJson() => {
+        'dbRouteId': dbRouteId,
+        'rating': rating,
+      };
 }

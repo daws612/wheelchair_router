@@ -227,7 +227,8 @@ async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, neare
             routes[k]["rating"] = rating;
 
             //save route in db for later rating reference
-            await commons.saveRouteInfo(origin.stop_lat, origin.stop_lon, destination.stop_lat, destination.stop_lon, "bus-" + routes[k].route_short_name);
+            routeid = await commons.saveRouteInfo(origin.stop_lat, origin.stop_lon, destination.stop_lat, destination.stop_lon, "bus-" + routes[k].route_short_name);
+            routes[k]["dbRouteId"] = routeid;
         } //for routes
     }//if routes
     if (routes.length > 0)

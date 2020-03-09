@@ -170,9 +170,12 @@ async function saveRouteInfo(originlat, originlon, destlat, destlon, routeName) 
     if (routeid.rows.length < 1) {
         route = "SELECT route_id FROM izmit.routes " +
             " WHERE orig_lon = $1 AND orig_lat = $2 " +
-            " AND dest_lon = $3 AND dest_lat = $4;"
-        routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat]);
+            " AND dest_lon = $3 AND dest_lat = $4 AND route_name = $5;"
+        routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat, routeName]);
     }
+
+    if(routeid.rowCount > 1)
+        console.log("******More than one route returned**********");
 
     routeid = routeid.rows[0].route_id;
 
@@ -205,14 +208,14 @@ async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, 
     if (segments.rowCount == 0)
         return result;
 
-    var response = formatResult(segments.rows, rating);
+    var response = formatResult(segments.rows, rating, routeid);
     if (response.pathData.length > 0)
         result.push(response);
 
     return result;
 }
 
-function formatResult(results, rating) {
+function formatResult(results, rating, routeid) {
 
     var path = [];
     var distance =0;
@@ -231,7 +234,7 @@ function formatResult(results, rating) {
     //assuming speed is 1.4meters/sec
     var duration = distance / 1.4;
 
-    var response = { polyline: "", pathData: path, distance: Math.ceil( distance ), duration: Math.ceil( duration ), rating: rating };
+    var response = { polyline: "", pathData: path, distance: Math.ceil( distance ), duration: Math.ceil( duration ), rating: rating, dbRouteId: routeid };
     return response;
 }
 

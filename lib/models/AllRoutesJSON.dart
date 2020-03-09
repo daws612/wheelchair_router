@@ -33,6 +33,7 @@ class BusRoutesJSON {
   final List<WalkPathJSON> toFirstStop;
   final List<WalkPathJSON> fromLastStop;
   double rating;
+  final String dbRouteId;
 
   BusRoutesJSON(
       {this.routeIndex,
@@ -46,7 +47,8 @@ class BusRoutesJSON {
       this.polylines,
       this.toFirstStop,
       this.fromLastStop,
-      this.rating});
+      this.rating,
+      this.dbRouteId});
 
   factory BusRoutesJSON.fromJson(Map<String, dynamic> json, int index) {
     if (json == null) return null;
@@ -69,7 +71,8 @@ class BusRoutesJSON {
           stop1List.map((i) => WalkPathJSON.fromJson(i, index1++)).toList(),
       fromLastStop:
           stop2List.map((i) => WalkPathJSON.fromJson(i, index2++)).toList(),
-      rating: json['rating'] is double ? json['rating'] : json['rating']/10
+      rating: json['rating'] is double ? json['rating'] : (json['rating'] / 10) * 10,
+      dbRouteId: json['dbRouteId']
     );
   }
 }
@@ -97,9 +100,10 @@ class WalkPathJSON {
   final int distanceM;
   final int durationSec;
   double rating;
+  final String dbRouteId;
 
   WalkPathJSON(
-      {this.routeIndex, this.pathData, this.distanceM, this.durationSec, this.rating});
+      {this.routeIndex, this.pathData, this.distanceM, this.durationSec, this.rating, this.dbRouteId});
 
   factory WalkPathJSON.fromJson(Map<String, dynamic> json, routeIndex) {
     var list = json['pathData'] as List;
@@ -109,7 +113,8 @@ class WalkPathJSON {
       pathData: list.map((i) => PolylineJSON.fromJson(i, index++)).toList(),
       distanceM: json['distance'],
       durationSec: json['duration'],
-      rating: json['rating'] is double ? json['rating'] : json['rating']/10
+      rating: json['rating'] is double ? json['rating'] : (json['rating'] / 10) * 10,
+      dbRouteId: json['dbRouteId']
     );
   }
 }

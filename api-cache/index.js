@@ -9,16 +9,20 @@ const getElevation = require('./getElevation');
 const userLocationLogger = require('./userLocationLogger');
 const pgRoute = require('./pgRoute');
 var logFileName = __dirname + '/api-cache.log';
+const saveRating = require('./saveRating');
 
 var server = restify.createServer();
-//server.use(restify.plugins.bodyParser()); //---Used for post
+server.use(restify.plugins.bodyParser()); //---Used for post
 server.use(restify.plugins.queryParser());
+
 server.get('/getpath', getPath.httpFetchPolylinePath);
 server.get('/getbusroutes', getRoutes.performRouting);
 server.get('/getbusstops', getStops.getBusStops);
 server.get('/getelevation', getElevation.httpGetElevation);
 server.get('/pgroute', pgRoute.pgRoute);
 server.get('/userLocationLogger', userLocationLogger.logCurrentLocation);
+
+server.post('/saveRating', saveRating.saveRating);
 
 //log to file
 var logFile = fs.createWriteStream(logFileName, { flags: 'a' });

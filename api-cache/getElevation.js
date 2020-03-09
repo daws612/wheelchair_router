@@ -57,7 +57,7 @@ async function getElevation(originHttp, destinationHttp, route) {
             return;
         }
 
-        result = { polyline: "", pathData: "", distance: "", duration: "" };
+        result = { polyline: "", pathData: "", distance: "", duration: "", rating: 0, dbRouteId: "" };
 
         try {
             var legs = route.legs;
@@ -118,6 +118,7 @@ async function getElevation(originHttp, destinationHttp, route) {
             result.pathData = pathData;
             result.distance = distance;
             result.duration = duration;
+            result.routeid = routeid;
 
             //result.push({ polyline, pathData });
 

@@ -86,7 +86,7 @@ class DataService {
         destination.latitude.toString() +
         '&destlon=' +
         destination.longitude.toString();
-    var url = "http://192.168.43.239:9595/pgroute$params";
+    var url = "https://api.jaywjay.com/wheelchair/pgroute$params";
 
     print("Fetching routes from - " + url);
 
