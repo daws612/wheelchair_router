@@ -132,16 +132,16 @@ async function saveCacheData(origin, destination, cobj, tableName, fieldName, di
 
 }
 
-async function getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon) {
+async function getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon, firebaseId) {
 
     var originHttp = originlat + "," + originlon;
     var destinationHttp = destlat + "," + destlon;
 
     //console.log("Get sidewalk directions.");
-    var sidewalkDirs = await pgRoute.getSidewalkDirections(originlat, originlon, destlat, destlon);
+    var sidewalkDirs = await pgRoute.getSidewalkDirections(originlat, originlon, destlat, destlon, firebaseId);
     if (sidewalkDirs === 'undefined' || sidewalkDirs.length == 0) {
         console.log("No sidewalk route found.");
-        var walkingDirections = await getElevation.getWalkingDirections(originHttp, destinationHttp, true);
+        var walkingDirections = await getElevation.getWalkingDirections(originHttp, destinationHttp, false, firebaseId);
         if (walkingDirections === 'undefined' || walkingDirections.length == 0)
             console.log("No walking directions found");
         else
@@ -182,20 +182,21 @@ async function saveRouteInfo(originlat, originlon, destlat, destlon, routeName) 
     return routeid;
 }
 
-async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, routeName) {
+async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, routeName, firebaseId) {
 
     var result = [];
+    if(!firebaseId) firebaseId="test";
 
-    var route = "SELECT r.route_id, coalesce(rr.rating, 0) as rating FROM izmit.routes r " +
+    var route = "SELECT r.route_id, coalesce(round(avg(rating),2),0) as rating FROM izmit.routes r " +
         " LEFT JOIN izmit.route_ratings rr ON r.route_id = rr.route_id " +
         " WHERE orig_lon = $1 AND orig_lat = $2 " +
-        " AND dest_lon = $3 AND dest_lat = $4 AND route_name=$5;"
+        " AND dest_lon = $3 AND dest_lat = $4 AND route_name=$5  GROUP BY r.route_id;"
     var routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat, routeName]);
 
     if (routeid.rowCount == 0)
         return result;
 
-    var rating = routeid.rows[0].rating;
+    var rating = +routeid.rows[0].rating;
     routeid = routeid.rows[0].route_id;
 
     var segmentsQu = "SELECT start_lat as y1, start_lon as x1, end_lat as y2, end_lon as x2, incline, length FROM izmit.route_segments rs " +

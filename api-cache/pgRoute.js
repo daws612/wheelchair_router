@@ -1,9 +1,9 @@
 const getElevation = require('./getElevation');
 const commons = require('./commons');
 
-async function getSidewalkDirections(originlat, originlon, destlat, destlon) {
+async function getSidewalkDirections(originlat, originlon, destlat, destlon, firebaseId) {
   return new Promise(async (resolve, reject) => {
-    var result = await commons.fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, "sidewalk");
+    var result = await commons.fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, "sidewalk", firebaseId);
 
     if(result.length > 0){
       resolve(result);
@@ -22,19 +22,19 @@ async function getSidewalkDirections(originlat, originlon, destlat, destlon) {
       //"WHERE cost_len = 0', " +
       "(SELECT source " +
       "FROM izmit.izmit_noded " +
-      "ORDER BY ST_Distance( " +
+      "WHERE ST_Distance( " +
       "ST_StartPoint(ST_geometryn(wkb_geometry,1)), " +
       "ST_SetSRID(ST_MakePoint($1, $2), 4326), " +
       "true " +
-      ") ASC " +
+      ") < 500 ORDER BY wkb_geometry <-> ST_SetSRID(ST_Point($1, $2),4326) ASC " +
       "LIMIT 1),  " +
       "(SELECT source " +
       "FROM izmit.izmit_noded  " +
-      "ORDER BY ST_Distance( " +
+      "WHERE ST_Distance( " +
       "ST_StartPoint(ST_geometryn(wkb_geometry,1)), " +
       "ST_SetSRID(ST_MakePoint($3, $4), 4326), " +
       "true " +
-      ") ASC LIMIT 1), false " +
+      ") < 500 ORDER BY wkb_geometry <-> ST_SetSRID(ST_Point($3, $4),4326) ASC LIMIT 1), false " +
       ") as pt " +
       "JOIN izmit.izmit_noded rd ON pt.edge = rd.id " +
       "JOIN izmit.izmit AS original ON original.id = rd.old_id;";
@@ -47,9 +47,11 @@ async function getSidewalkDirections(originlat, originlon, destlat, destlon) {
 
       await saveRouteInfo(originlat, originlon, destlat, destlon, results);
 
-      var response = commons.formatResult(results.rows);
-      if (response.pathData.length > 0)
-        result.push(response);
+      var response = await commons.fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, "sidewalk", firebaseId);
+      if(response.length > 0){
+        resolve(response);
+        return;
+      }
       resolve(result);
     });
 
@@ -72,12 +74,7 @@ async function saveRouteInfo(originlat, originlon, destlat, destlon, results) {
     var proc = `CALL izmit.saveRouteInfo($1, $2, $3, $4, $5, $6, $7, $8)`;
 
     console.log("Add segment -- "+ i +" :: " + results[i].y1 + results[i].x1 + results[i].y2 + results[i].x2);
-    commons.pgPool.query(proc, [results[i].y1, results[i].x1, results[i].y2, results[i].x2, calc.slope, i, results[i].accessible, routeid], (error, segments) => {
-      if (error) {
-        console.log(error);
-      }
-    });
-
+    await commons.pgPool.query(proc, [results[i].y1, results[i].x1, results[i].y2, results[i].x2, calc.slope, i, results[i].accessible, routeid]);
   }
 }
 

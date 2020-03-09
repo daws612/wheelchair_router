@@ -57,6 +57,8 @@ class BusRoutesJSON {
     var stop1List = json['toFirstStop'] as List;
     var stop2List = json['fromLastStop'] as List;
     int index1 = 0, index2 = 0;
+    if(json['rating'] == null) 
+      json['rating'] = 0;
     return new BusRoutesJSON(
       routeIndex: index,
       routeId: json['route_id'],
@@ -108,6 +110,8 @@ class WalkPathJSON {
   factory WalkPathJSON.fromJson(Map<String, dynamic> json, routeIndex) {
     var list = json['pathData'] as List;
     int index = 0;
+    if(json['rating'] == null) 
+      json['rating'] = 0;
     return new WalkPathJSON(
       routeIndex: routeIndex,
       pathData: list.map((i) => PolylineJSON.fromJson(i, index++)).toList(),

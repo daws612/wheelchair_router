@@ -163,6 +163,8 @@ class BusRouteDetails extends StatelessWidget {
   }
 
   String _printDistance(int distanceMeters) {
+    if(distanceMeters == null)
+      return "??m";
     if (distanceMeters < 1000)
       return distanceMeters.toString() + "m";
     else {

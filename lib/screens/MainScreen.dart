@@ -26,7 +26,6 @@ import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
 import 'package:routing/services/UserLocationLoggerService.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:smooth_star_rating/smooth_star_rating.dart';
 import 'RouteDetails.dart';
 import 'package:geojson/geojson.dart';
 import 'package:flutter/services.dart' show SystemChannels, rootBundle;
@@ -85,21 +84,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
 
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // user returned to our app
-    } else if (state == AppLifecycleState.inactive) {
-      // app is inactive
-    } else if (state == AppLifecycleState.paused) {
-      dispose();
-      // user is about quit our app temporally
-    } else if (state == AppLifecycleState.detached) {
-      dispose();
-      // app suspended (not used in iOS)
-    }
   }
 
   _checkPermissions() {
@@ -819,6 +803,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (!mounted) return;
         setState(() {});
       }
+      print("Completed stops loops");
     }
   }
 

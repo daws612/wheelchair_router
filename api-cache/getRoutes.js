@@ -2,7 +2,6 @@ const config = require('./config');
 const commons = require('./commons');
 const util = require('util');
 const getElevation = require('./getElevation');
-const pgRoute = require('./pgRoute');
 
 async function performRouting(req, res, next) {
     var response = { busRoutes: "", walkingDirections: "" };
@@ -17,8 +16,10 @@ async function performRouting(req, res, next) {
         var originHttp = originlat + "," + originlon;
         var destinationHttp = destlat + "," + destlon;
 
-        var walkingDirections = await commons.getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon); //await getWalkingRoutes(originHttp, destinationHttp);
-        var busRoutes = await getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp);
+        var firebaseId = params.id;
+
+        var walkingDirections = await commons.getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon, firebaseId); //await getWalkingRoutes(originHttp, destinationHttp);
+        var busRoutes = await getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp, firebaseId);
 
         response.walkingDirections = walkingDirections;
         response.busRoutes = busRoutes;
@@ -33,11 +34,11 @@ async function performRouting(req, res, next) {
 
 async function getWalkingRoutes(origin, destination) {
     console.log("Get walking route of whole path.");
-    var walkingDirections = await getElevation.getWalkingDirections(origin, destination, true);
+    var walkingDirections = await getElevation.getWalkingDirections(origin, destination, false);
     return walkingDirections;
 }
 
-async function getBusRoutes(originlat, originlon, destlat, destlon) {
+async function getBusRoutes(originlat, originlon, destlat, destlon, firebaseId) {
 
     var result = [];
     var maxNumberOfOptions = 3;
@@ -66,7 +67,7 @@ async function getBusRoutes(originlat, originlon, destlat, destlon) {
         var pageEnd = pageStart + pageSize;
         while (result.length < maxNumberOfOptions && pageStart < nearestOrigin.length) {
 
-            result = await createRouteDetails(originlat, originlon, destlat, destlon, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions);
+            result = await createRouteDetails(originlat, originlon, destlat, destlon, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions, firebaseId);
 
             if (result.length < maxNumberOfOptions) {
                 pageStart = pageEnd;
@@ -86,7 +87,7 @@ async function getBusRoutes(originlat, originlon, destlat, destlon) {
 
 }
 
-async function createRouteDetails(originlat, originlon, destlat, destlon, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
+async function createRouteDetails(originlat, originlon, destlat, destlon, pageStart, pageEnd, nearestOrigin, nearestDest, result, maxNumberOfOptions, firebaseId) {
     for (var i = pageStart; i < nearestOrigin.length && i < pageEnd; i++) {
         for (var j = 0; j < nearestDest.length && j < pageEnd; j++) {
             if (result.length >= maxNumberOfOptions) {
@@ -94,7 +95,7 @@ async function createRouteDetails(originlat, originlon, destlat, destlon, pageSt
                 j = nearestDest.length;
                 break;
             }
-            result = await fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions)
+            result = await fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions, firebaseId)
 
 
         } //for dest
@@ -112,7 +113,7 @@ async function createRouteDetails(originlat, originlon, destlat, destlon, pageSt
                     break;
                 }
 
-                result = await fetchDBRoutes(originlat, originlon, destlat, destlon, orgn, dstn, nearestOrigin, nearestDest, result, maxNumberOfOptions)
+                result = await fetchDBRoutes(originlat, originlon, destlat, destlon, orgn, dstn, nearestOrigin, nearestDest, result, maxNumberOfOptions, firebaseId)
 
             }
         }
@@ -121,7 +122,7 @@ async function createRouteDetails(originlat, originlon, destlat, destlon, pageSt
     return result;
 }
 
-async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions) {
+async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, nearestOrigin, nearestDest, result, maxNumberOfOptions, firebaseId) {
 
     console.log("Search for origin " + i + " and destination " + j);
     var origin = nearestOrigin[i];
@@ -214,15 +215,15 @@ async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, neare
             }
 
             //get routing rate
-            var route = "SELECT r.route_id,  coalesce(rr.rating, 0) as rating FROM izmit.routes r " +
+            var route = "SELECT r.route_id,  coalesce(round(avg(rating),2),0) as rating FROM izmit.routes r " +
                 " LEFT JOIN izmit.route_ratings rr ON r.route_id = rr.route_id " +
                 " WHERE orig_lon = $1 AND orig_lat = $2 " +
-                " AND dest_lon = $3 AND dest_lat = $4 AND route_name=$5;"
+                " AND dest_lon = $3 AND dest_lat = $4 AND route_name=$5 GROUP BY r.route_id;"
             var routeid = await commons.pgPool.query(route, [origin.stop_lon, origin.stop_lat, destination.stop_lon, destination.stop_lat, "bus-" + routes[k].route_short_name]);
 
             var rating = 0;
             if (routeid.rowCount > 0)
-                rating = routeid.rows[0].rating;
+                rating = +routeid.rows[0].rating;
 
             routes[k]["rating"] = rating;
 

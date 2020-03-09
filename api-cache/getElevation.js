@@ -22,7 +22,7 @@ async function httpGetElevation(req, res, next) {
 
 }
 
-async function getWalkingDirections(originHttp, destinationHttp, allOptions) {
+async function getWalkingDirections(originHttp, destinationHttp, allOptions, firebaseId) {
     return new Promise(async (resolve, reject) => {
         var result = [];
 
@@ -37,20 +37,20 @@ async function getWalkingDirections(originHttp, destinationHttp, allOptions) {
 
         if (allOptions) {
             for (var poly = 0; poly < polyline.routes.length; poly++) {
-                var dirs = await getElevation(originHttp, destinationHttp, polyline.routes[poly]);
+                var dirs = await getElevation(originHttp, destinationHttp, polyline.routes[poly], firebaseId);
                 result = result.concat(dirs);
             }
         } else {
-            var dirs = await getElevation(originHttp, destinationHttp, polyline.routes[0]);
+            var dirs = await getElevation(originHttp, destinationHttp, polyline.routes[0], firebaseId);
             result = result.concat(dirs);
         }
         resolve(result);
     });
 }
 
-async function getElevation(originHttp, destinationHttp, route) {
+async function getElevation(originHttp, destinationHttp, route, firebaseId) {
     return new Promise(async (resolve, reject) => {
-        var result = await commons.fetchRouteSegmentsFromDB(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk");
+        var result = await commons.fetchRouteSegmentsFromDB(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk", firebaseId);
 
         if (result.length > 0) {
             resolve(result);
@@ -102,12 +102,8 @@ async function getElevation(originHttp, destinationHttp, route) {
 
                 var proc = `CALL izmit.saveRouteInfo($1, $2, $3, $4, $5, $6, $7, $8)`;
 
-                console.log("Add segment -- " + i + " :: " + path[p].latitude + path[p].longitude + path[p + 1].latitude + path[p + 1].longitude);
-                commons.pgPool.query(proc, [path[p].latitude, path[p].longitude, path[p + 1].latitude, path[p + 1].longitude, calc.slope, i, 0, routeid], (error, segments) => {
-                    if (error) {
-                        console.log(error);
-                    }
-                });
+                console.log("Add segment -- " + p + " :: " + path[p].latitude + path[p].longitude + path[p + 1].latitude + path[p + 1].longitude);
+                await commons.pgPool.query(proc, [path[p].latitude, path[p].longitude, path[p + 1].latitude, path[p + 1].longitude, calc.slope, p, 0, routeid]);
 
                 elevation = calc.elevation.results;
                 var slope = calc.slope;
@@ -118,7 +114,7 @@ async function getElevation(originHttp, destinationHttp, route) {
             result.pathData = pathData;
             result.distance = distance;
             result.duration = duration;
-            result.routeid = routeid;
+            result.dbRouteId = routeid;
 
             //result.push({ polyline, pathData });
 
