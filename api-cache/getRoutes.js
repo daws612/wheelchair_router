@@ -144,8 +144,8 @@ async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, neare
         "a.stop_id = ? " +
         "and b.stop_id = ? " +
         "and a.trip_id = b.trip_id " +
-        "and a.departure_time between '09:00' and TIME(DATE_ADD('2019-01-07 09:00', INTERVAL 15 MINUTE)) " +
-        //"and a.departure_time between current_time() and TIME(DATE_ADD(now(), INTERVAL 30 MINUTE)) " +
+        //"and a.departure_time between '09:00' and TIME(DATE_ADD('2019-01-07 09:00', INTERVAL 15 MINUTE)) " +
+        "and a.departure_time between current_time() and TIME(DATE_ADD(now(), INTERVAL 30 MINUTE)) " +
         "and t.service_id = (case  " +
         "when dayofweek(current_date()) between 2 and 6 then 1 " +
         "when dayofweek(current_date()) = 1 then 3 " +

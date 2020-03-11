@@ -184,6 +184,8 @@ class PlacesSearchScreenState extends State<PlacesSearchScreen> {
   }
 
   Future<Placemark> _getAddress(Position pos) async {
+    if(pos == null)
+      return null;
     List<Placemark> placemarks = await Geolocator()
         .placemarkFromCoordinates(pos.latitude, pos.longitude);
     if (placemarks != null && placemarks.isNotEmpty) {

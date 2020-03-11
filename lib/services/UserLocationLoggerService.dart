@@ -6,6 +6,8 @@ class UserLocationLoggerService {
   static Future<void>logCurrentLocation(Geolocator _geolocator, String origin, String destination) async {
      String userId = await UserService.getFirebaseUserId();
      Position _currentLocationPos = await _geolocator.getLastKnownPosition();
+     if(_currentLocationPos == null)
+      return;
      String _currentLocation = _currentLocationPos.latitude.toString() + "," + _currentLocationPos.longitude.toString();
       print("Logging location: currentLocation: $_currentLocation:  Origin: $origin, Destination: $destination UserID: $userId");
       String params = "?userId=" +

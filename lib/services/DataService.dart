@@ -49,7 +49,7 @@ class DataService {
 
     //https://missfarukh.com/server_functions/getRoutes.php?originlat=40.76012279512181&originlon=29.922576919198036&destlat=40.824600&destlon=29.919007
     //http://192.168.43.238:9595/getbusroutes?originlat=40.8191533&originlon=29.923916099999985&destlat=40.7656144&destlon=29.925500199999988
-    var url = 'http://192.168.43.239:9595/getbusroutes$params';
+    var url = 'https://api.jaywjay.com/wheelchair/getbusroutes$params';
 
     print("Fetching routes from - " + url);
 

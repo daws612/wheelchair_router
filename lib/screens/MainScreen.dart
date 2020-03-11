@@ -344,8 +344,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               child: GestureDetector(
                 onTap: () async {
                   final Const.ConfirmAction action =
-                      await _asyncConfirmDialog(context);
-                  if (action == Const.ConfirmAction.ACCEPT) _closeRouting();
+                      await _asyncConfirmDialog(context, 'Reset Map?', 'This will remove the displayed routes and their details.', true);
+                   if (action == Const.ConfirmAction.ACCEPT) _closeRouting();
                 },
                 child: Align(
                   alignment: Alignment.centerLeft,
@@ -676,6 +676,10 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     LatLng destination = _markers["Destination"].position;
     Position lastKnownPosition = await _geolocator.getLastKnownPosition(
         locationPermissionLevel: GeolocationPermission.locationAlways);
+    if(lastKnownPosition == null && !_markers.containsKey("Origin")) {
+      _asyncConfirmDialog(context, 'Address Not Set', 'Please choose the address you want to route from since we cannot get your current location. Thank you', false);
+      return;
+    }
     LatLng origin = _markers.containsKey("Origin")
         ? _markers["Origin"].position
         : LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
@@ -743,22 +747,21 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     });
   }
 
-  Future<Const.ConfirmAction> _asyncConfirmDialog(BuildContext context) async {
+  Future<Const.ConfirmAction> _asyncConfirmDialog(BuildContext context, String title, String message, bool showCancel) async {
     return showDialog<Const.ConfirmAction>(
       context: context,
       barrierDismissible: false, // user must tap button for close dialog!
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Reset Map?'),
-          content: const Text(
-              'This will remove the displayed routes and their details.'),
+          content: Text(message),
           actions: <Widget>[
-            FlatButton(
+            showCancel ? FlatButton(
               child: const Text('CANCEL'),
               onPressed: () {
                 Navigator.of(context).pop(Const.ConfirmAction.CANCEL);
               },
-            ),
+            ) : Container(width: 0, height: 0,),
             FlatButton(
               child: const Text('ACCEPT'),
               onPressed: () {
@@ -1043,7 +1046,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 child: GestureDetector(
                   onTap: () async {
                     final Const.ConfirmAction action =
-                        await _asyncConfirmDialog(context);
+                        await _asyncConfirmDialog(context, 'Reset Map?', 'This will remove the displayed routes and their details.', true);
                     if (action == Const.ConfirmAction.ACCEPT) _closeRouting();
                   },
                   child: Align(
