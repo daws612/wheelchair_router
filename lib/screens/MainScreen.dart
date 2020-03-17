@@ -184,7 +184,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     print("Permission now Granted");
     //_geolocator.forceAndroidLocationManager = true;
     Position position = await _geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+        desiredAccuracy: LocationAccuracy.bestForNavigation);
 
     _controller.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -220,7 +220,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           ? Stack(alignment: Alignment.topCenter, children: <Widget>[
               GoogleMap(
                 onLongPress: (latlng) {
-                  _addDraggableMarker(latlng);
+                  //_addDraggableMarker(latlng);
                 },
                 onMapCreated: _onMapCreated,
                 onCameraIdle: _onCameraIdle,
@@ -275,9 +275,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       ])),
               showCircularProgress(),
               showGetDirectionsButton(),
-              showGetPGRouteButton(),
+              //showGetPGRouteButton(),
               toggleStopsButton(),
-              toggleGeoJSONDataButton(),
+              //toggleGeoJSONDataButton(),
               preferencesButton(),
               SlidingUpPanel(
                 //color: Theme.of(context).primaryColor.withOpacity(0.5),

@@ -202,7 +202,7 @@ class RateDialogState extends State<RateDialog> {
     FirebaseUser user = await UserService.currentUser();
 
     Response response =
-        await Dio().post("http://192.168.43.239:9595/saveRating", data: {"rating": body, "firebaseId": user.uid});
+        await Dio().post(Constants.serverUrl + "/saveRating", data: {"rating": body, "firebaseId": user.uid});
     if (response.statusCode == 200) {}
   }
 }

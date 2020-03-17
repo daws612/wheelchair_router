@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:routing/Constants.dart';
 import 'package:routing/models/AllRoutesJSON.dart';
 import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
@@ -16,7 +17,7 @@ class DataService {
         bounds.northeast.longitude.toString();
 
     //https://missfarukh.com/server_functions/getStops.php?swlat=40.81536520463702&swlon=29.921189546585083&nelat=40.84009957890793&nelon=29.940704964101315
-    var url = 'https://api.jaywjay.com/wheelchair/getbusstops$params';
+    var url = Constants.serverUrl + '/getbusstops$params';
     print("Fetching stops - " + url);
 
     List<dynamic> stopsJSON;
@@ -49,7 +50,7 @@ class DataService {
 
     //https://missfarukh.com/server_functions/getRoutes.php?originlat=40.76012279512181&originlon=29.922576919198036&destlat=40.824600&destlon=29.919007
     //http://192.168.43.238:9595/getbusroutes?originlat=40.8191533&originlon=29.923916099999985&destlat=40.7656144&destlon=29.925500199999988
-    var url = 'https://api.jaywjay.com/wheelchair/getbusroutes$params';
+    var url = Constants.serverUrl + '/getbusroutes$params';
 
     print("Fetching routes from - " + url);
 
@@ -86,7 +87,7 @@ class DataService {
         destination.latitude.toString() +
         '&destlon=' +
         destination.longitude.toString();
-    var url = "https://api.jaywjay.com/wheelchair/pgroute$params";
+    var url = Constants.serverUrl + "/pgroute$params";
 
     print("Fetching routes from - " + url);
 
