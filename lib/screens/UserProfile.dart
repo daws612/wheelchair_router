@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:numberpicker/numberpicker.dart';
-import 'package:routing/models/User.dart';
+import 'package:WeRoute/models/User.dart';
 import '../services/UserService.dart';
 
 class UserProfile extends StatefulWidget {

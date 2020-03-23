@@ -9,22 +9,22 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:routing/Constants.dart' as Const;
-import 'package:routing/models/AllRoutesJSON.dart' as AllRoutes;
-import 'package:routing/models/LocationJSON.dart';
-import 'package:routing/models/RoutesJSON.dart';
-import 'package:routing/models/StopsJSON.dart';
-import 'package:routing/models/User.dart';
-import 'package:routing/screens/ImageViewer.dart';
-import 'package:routing/screens/PathDetails.dart';
-import 'package:routing/screens/PlacesSearchScreen.dart';
-import 'package:routing/screens/RateDialog.dart';
-import 'package:routing/screens/UserProfile.dart';
-import 'package:routing/services/DataService.dart';
-import 'package:routing/services/PermissionsService.dart';
+import 'package:WeRoute/Constants.dart' as Const;
+import 'package:WeRoute/models/AllRoutesJSON.dart' as AllRoutes;
+import 'package:WeRoute/models/LocationJSON.dart';
+import 'package:WeRoute/models/RoutesJSON.dart';
+import 'package:WeRoute/models/StopsJSON.dart';
+import 'package:WeRoute/models/User.dart';
+import 'package:WeRoute/screens/ImageViewer.dart';
+import 'package:WeRoute/screens/PathDetails.dart';
+import 'package:WeRoute/screens/PlacesSearchScreen.dart';
+import 'package:WeRoute/screens/RateDialog.dart';
+import 'package:WeRoute/screens/UserProfile.dart';
+import 'package:WeRoute/services/DataService.dart';
+import 'package:WeRoute/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
-import 'package:routing/services/UserLocationLoggerService.dart';
+import 'package:WeRoute/services/UserLocationLoggerService.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'RouteDetails.dart';
 import 'package:geojson/geojson.dart';
@@ -97,6 +97,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         .then((result) {
       if (result.length == 0) {
         print("Permission Granted");
+        _goToUserProfilePage(true);
         showCurrentLocation();
         if (!mounted) return;
         setState(() {
@@ -126,6 +127,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             WidgetsBinding.instance.addPostFrameCallback(
                 (_) => _scaffoldKey.currentState.showSnackBar(snackBar));
           } else {
+            _goToUserProfilePage(true);
             //show current location/ set center to current location
             showCurrentLocation();
             if (!mounted) return;
@@ -343,9 +345,12 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               flex: 1,
               child: GestureDetector(
                 onTap: () async {
-                  final Const.ConfirmAction action =
-                      await _asyncConfirmDialog(context, 'Reset Map?', 'This will remove the displayed routes and their details.', true);
-                   if (action == Const.ConfirmAction.ACCEPT) _closeRouting();
+                  final Const.ConfirmAction action = await _asyncConfirmDialog(
+                      context,
+                      'Reset Map?',
+                      'This will remove the displayed routes and their details.',
+                      true);
+                  if (action == Const.ConfirmAction.ACCEPT) _closeRouting();
                 },
                 child: Align(
                   alignment: Alignment.centerLeft,
@@ -504,24 +509,32 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               color: Colors.black54,
             ),
             onPressed: () {
-              FirebaseAuth.instance.currentUser().then((onValue) {
-                Firestore.instance
-                    .collection('/users')
-                    .document(onValue.uid)
-                    .get()
-                    .then((doc) {
-                  User user = User.fromDocument(doc);
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => UserProfile(
-                                user: user,
-                              )));
-                });
-              });
+              _goToUserProfilePage(false);
             },
           ),
         ));
+  }
+
+  _goToUserProfilePage(bool isAutomatic) {
+    FirebaseAuth.instance.currentUser().then((onValue) {
+      Firestore.instance
+          .collection('/users')
+          .document(onValue.uid)
+          .get()
+          .then((doc) {
+        User user = User.fromDocument(doc);
+        if (isAutomatic && user.wheelchairtype != null && user.age > 0 && user.gender != "Unspecified") {
+          print("User already set. Do not redirect to profile page");
+        } else {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => UserProfile(
+                        user: user,
+                      )));
+        }
+      });
+    });
   }
 
   Widget toggleStopsButton() {
@@ -676,8 +689,12 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     LatLng destination = _markers["Destination"].position;
     Position lastKnownPosition = await _geolocator.getLastKnownPosition(
         locationPermissionLevel: GeolocationPermission.locationAlways);
-    if(lastKnownPosition == null && !_markers.containsKey("Origin")) {
-      _asyncConfirmDialog(context, 'Address Not Set', 'Please choose the address you want to route from since we cannot get your current location. Thank you', false);
+    if (lastKnownPosition == null && !_markers.containsKey("Origin")) {
+      _asyncConfirmDialog(
+          context,
+          'Address Not Set',
+          'Please choose the address you want to route from since we cannot get your current location. Thank you',
+          false);
       return;
     }
     LatLng origin = _markers.containsKey("Origin")
@@ -747,7 +764,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     });
   }
 
-  Future<Const.ConfirmAction> _asyncConfirmDialog(BuildContext context, String title, String message, bool showCancel) async {
+  Future<Const.ConfirmAction> _asyncConfirmDialog(BuildContext context,
+      String title, String message, bool showCancel) async {
     return showDialog<Const.ConfirmAction>(
       context: context,
       barrierDismissible: false, // user must tap button for close dialog!
@@ -756,12 +774,17 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           title: Text('Reset Map?'),
           content: Text(message),
           actions: <Widget>[
-            showCancel ? FlatButton(
-              child: const Text('CANCEL'),
-              onPressed: () {
-                Navigator.of(context).pop(Const.ConfirmAction.CANCEL);
-              },
-            ) : Container(width: 0, height: 0,),
+            showCancel
+                ? FlatButton(
+                    child: const Text('CANCEL'),
+                    onPressed: () {
+                      Navigator.of(context).pop(Const.ConfirmAction.CANCEL);
+                    },
+                  )
+                : Container(
+                    width: 0,
+                    height: 0,
+                  ),
             FlatButton(
               child: const Text('ACCEPT'),
               onPressed: () {
@@ -1045,8 +1068,11 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 flex: 1,
                 child: GestureDetector(
                   onTap: () async {
-                    final Const.ConfirmAction action =
-                        await _asyncConfirmDialog(context, 'Reset Map?', 'This will remove the displayed routes and their details.', true);
+                    final Const.ConfirmAction action = await _asyncConfirmDialog(
+                        context,
+                        'Reset Map?',
+                        'This will remove the displayed routes and their details.',
+                        true);
                     if (action == Const.ConfirmAction.ACCEPT) _closeRouting();
                   },
                   child: Align(
@@ -1279,24 +1305,16 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Future<Const.ConfirmAction> _asyncRateRouteDialog(
       BuildContext context, int routeIndex, bool isBus) async {
-    AllRoutes.BusRoutesJSON busRoute;
-    AllRoutes.WalkPathJSON walkPath;
-    if (isBus) {
-      allRoutes.busRoutes.forEach((AllRoutes.BusRoutesJSON route) {
-        if (route != null && routeIndex == route.routeIndex) busRoute = route;
-      });
-    } else {
-      allRoutes.walkingDirections.forEach((AllRoutes.WalkPathJSON route) {
-        if (route != null && routeIndex == route.routeIndex) walkPath = route;
-      });
-    }
 
     return showDialog<Const.ConfirmAction>(
       context: context,
       barrierDismissible: false, // user must tap button to close dialog!
       builder: (BuildContext context) {
-        return RateDialog(allRoutes: this.allRoutes, routeIndex: routeIndex, isBus: isBus,);
-        
+        return RateDialog(
+          allRoutes: this.allRoutes,
+          routeIndex: routeIndex,
+          isBus: isBus,
+        );
       },
     );
   }

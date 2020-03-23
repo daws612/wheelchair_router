@@ -1,6 +1,6 @@
 import 'package:charts_flutter/flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:routing/models/RoutesJSON.dart';
+import 'package:WeRoute/models/RoutesJSON.dart';
 
 class PathDetails extends StatelessWidget {
   PathDetails(

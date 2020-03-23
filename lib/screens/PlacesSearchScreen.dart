@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_webservice/places.dart';
-import 'package:routing/Constants.dart';
+import 'package:WeRoute/Constants.dart';
 
 GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: Constants.kGoogleApiKey);
 

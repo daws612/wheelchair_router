@@ -1,11 +1,9 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:routing/Constants.dart';
-import 'package:routing/models/AllRoutesJSON.dart';
-import 'package:routing/services/UserService.dart';
+import 'package:WeRoute/Constants.dart';
+import 'package:WeRoute/models/AllRoutesJSON.dart';
+import 'package:WeRoute/services/UserService.dart';
 import 'package:smooth_star_rating/smooth_star_rating.dart';
 
 class RateDialog extends StatefulWidget {
@@ -190,20 +188,34 @@ class RateDialogState extends State<RateDialog> {
   }
 
   _setRating() async {
-    List<Map<String, dynamic>> body = new List<Map<String, dynamic>>();
-    if (widget.isBus) {
-      body.add(new RatingJSON(dbRouteId: busRoute.dbRouteId, rating: busRoute.rating).toJson());
-      body.add(new RatingJSON(dbRouteId: busRoute.toFirstStop[0].dbRouteId, rating: busRoute.toFirstStop[0].rating).toJson());
-      body.add(new RatingJSON(dbRouteId: busRoute.fromLastStop[0].dbRouteId, rating: busRoute.fromLastStop[0].rating).toJson());
-    } else {
-      body.add(new RatingJSON(dbRouteId: walkPath.dbRouteId, rating: walkPath.rating).toJson());
+    try {
+      List<Map<String, dynamic>> body = new List<Map<String, dynamic>>();
+      if (widget.isBus) {
+        body.add(new RatingJSON(
+                dbRouteId: busRoute.dbRouteId, rating: busRoute.rating)
+            .toJson());
+        body.add(new RatingJSON(
+                dbRouteId: busRoute.toFirstStop[0].dbRouteId,
+                rating: busRoute.toFirstStop[0].rating)
+            .toJson());
+        body.add(new RatingJSON(
+                dbRouteId: busRoute.fromLastStop[0].dbRouteId,
+                rating: busRoute.fromLastStop[0].rating)
+            .toJson());
+      } else {
+        body.add(new RatingJSON(
+                dbRouteId: walkPath.dbRouteId, rating: walkPath.rating)
+            .toJson());
+      }
+
+      FirebaseUser user = await UserService.currentUser();
+
+      Response response = await Dio().post(Constants.serverUrl + "/saveRating",
+          data: {"rating": body, "firebaseId": user.uid});
+      if (response.statusCode == 200) {}
+    } catch (exception) {
+      print(exception);
     }
-
-    FirebaseUser user = await UserService.currentUser();
-
-    Response response =
-        await Dio().post(Constants.serverUrl + "/saveRating", data: {"rating": body, "firebaseId": user.uid});
-    if (response.statusCode == 200) {}
   }
 }
 

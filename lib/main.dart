@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'services/UserService.dart';
-import 'package:routing/screens/MainScreen.dart';
+import 'package:WeRoute/screens/MainScreen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +32,7 @@ class MyApp extends StatelessWidget {
         accentColor: accentColor,
       ),
       home: MainScreen(title: 'Maps Page'),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
