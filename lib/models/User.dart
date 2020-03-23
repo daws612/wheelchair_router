@@ -7,6 +7,7 @@ class User {
   String wheelchairtype;
   DateTime createdAt;
   DateTime updatedAt;
+  bool accepted;
 
   User({
     this.userId,
@@ -14,7 +15,8 @@ class User {
     this.gender,
     this.wheelchairtype,
     this.createdAt,
-    this.updatedAt
+    this.updatedAt,
+    this.accepted
   });
 
   factory User.fromJson(Map<String, dynamic> json) => new User(
@@ -24,6 +26,7 @@ class User {
     wheelchairtype: json["wheelchairtype"],
     createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt'], isUtc: true),
     updatedAt: DateTime.fromMillisecondsSinceEpoch(json['updatedAt'], isUtc: true),
+    accepted: json['accepted']
   );
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +34,7 @@ class User {
     "gender": gender,
     "wheelchairtype": wheelchairtype,
     'updatedAt': DateTime.now().toUtc().millisecondsSinceEpoch,
+    'accepted': accepted
   };
 
   factory User.fromDocument(DocumentSnapshot doc) {
@@ -43,6 +47,7 @@ class User {
       wheelchairtype: doc["wheelchairtype"],
       createdAt: doc['createdAt'] != null ? DateTime.fromMillisecondsSinceEpoch(doc['createdAt'], isUtc: true) : null,
       updatedAt: doc['updatedAt'] != null ? DateTime.fromMillisecondsSinceEpoch(doc['updatedAt'], isUtc: true) : null,
+      accepted: doc["accepted"]
     );
 
     return ret;

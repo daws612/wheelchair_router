@@ -97,7 +97,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         .then((result) {
       if (result.length == 0) {
         print("Permission Granted");
-        _goToUserProfilePage(true);
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _goToUserProfilePage(true));
         showCurrentLocation();
         if (!mounted) return;
         setState(() {
@@ -127,7 +128,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             WidgetsBinding.instance.addPostFrameCallback(
                 (_) => _scaffoldKey.currentState.showSnackBar(snackBar));
           } else {
-            _goToUserProfilePage(true);
+            WidgetsBinding.instance
+            .addPostFrameCallback((_) => _goToUserProfilePage(true));
+            
             //show current location/ set center to current location
             showCurrentLocation();
             if (!mounted) return;
