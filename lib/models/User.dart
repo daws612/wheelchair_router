@@ -47,7 +47,7 @@ class User {
       wheelchairtype: doc["wheelchairtype"],
       createdAt: doc['createdAt'] != null ? DateTime.fromMillisecondsSinceEpoch(doc['createdAt'], isUtc: true) : null,
       updatedAt: doc['updatedAt'] != null ? DateTime.fromMillisecondsSinceEpoch(doc['updatedAt'], isUtc: true) : null,
-      accepted: doc["accepted"]
+      accepted: doc["accepted"] != null ? doc["accepted"] : false
     );
 
     return ret;
