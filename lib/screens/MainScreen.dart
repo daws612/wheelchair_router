@@ -526,7 +526,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           .get()
           .then((doc) {
         User user = User.fromDocument(doc);
-        if (isAutomatic && user.wheelchairtype != null && user.age > 0 && user.gender != "Unspecified") {
+        if (isAutomatic && user != null && user.wheelchairtype != null && user.age > 0 && user.gender != "Unspecified") {
           print("User already set. Do not redirect to profile page");
         } else {
           Navigator.push(
