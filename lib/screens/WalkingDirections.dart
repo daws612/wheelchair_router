@@ -1,6 +1,6 @@
 import 'package:duration/duration.dart';
 import 'package:flutter/material.dart';
-import 'package:WeRoute/models/AllRoutesJSON.dart';
+import 'package:routing/models/AllRoutesJSON.dart';
 
 class WalkingDirections extends StatelessWidget {
   WalkingDirections({Key key, this.route, this.radioValue, this.onClicked, this.rateRouteClicked})

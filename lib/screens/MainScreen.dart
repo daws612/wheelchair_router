@@ -9,22 +9,22 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:WeRoute/Constants.dart' as Const;
-import 'package:WeRoute/models/AllRoutesJSON.dart' as AllRoutes;
-import 'package:WeRoute/models/LocationJSON.dart';
-import 'package:WeRoute/models/RoutesJSON.dart';
-import 'package:WeRoute/models/StopsJSON.dart';
-import 'package:WeRoute/models/User.dart';
-import 'package:WeRoute/screens/ImageViewer.dart';
-import 'package:WeRoute/screens/PathDetails.dart';
-import 'package:WeRoute/screens/PlacesSearchScreen.dart';
-import 'package:WeRoute/screens/RateDialog.dart';
-import 'package:WeRoute/screens/UserProfile.dart';
-import 'package:WeRoute/services/DataService.dart';
-import 'package:WeRoute/services/PermissionsService.dart';
+import 'package:routing/Constants.dart' as Const;
+import 'package:routing/models/AllRoutesJSON.dart' as AllRoutes;
+import 'package:routing/models/LocationJSON.dart';
+import 'package:routing/models/RoutesJSON.dart';
+import 'package:routing/models/StopsJSON.dart';
+import 'package:routing/models/User.dart';
+import 'package:routing/screens/ImageViewer.dart';
+import 'package:routing/screens/PathDetails.dart';
+import 'package:routing/screens/PlacesSearchScreen.dart';
+import 'package:routing/screens/RateDialog.dart';
+import 'package:routing/screens/UserProfile.dart';
+import 'package:routing/services/DataService.dart';
+import 'package:routing/services/PermissionsService.dart';
 import 'package:google_maps_webservice/places.dart';
 import 'package:google_maps_webservice/directions.dart' as DirectionsAPI;
-import 'package:WeRoute/services/UserLocationLoggerService.dart';
+import 'package:routing/services/UserLocationLoggerService.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'RouteDetails.dart';
 import 'package:geojson/geojson.dart';
@@ -129,8 +129,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 (_) => _scaffoldKey.currentState.showSnackBar(snackBar));
           } else {
             WidgetsBinding.instance
-            .addPostFrameCallback((_) => _goToUserProfilePage(true));
-            
+                .addPostFrameCallback((_) => _goToUserProfilePage(true));
+
             //show current location/ set center to current location
             showCurrentLocation();
             if (!mounted) return;
@@ -526,7 +526,11 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           .get()
           .then((doc) {
         User user = User.fromDocument(doc);
-        if (isAutomatic && user != null && user.wheelchairtype != null && user.age > 0 && user.gender != "Unspecified") {
+        if (isAutomatic &&
+            user != null &&
+            user.wheelchairtype != null &&
+            user.age > 0 &&
+            user.gender != "Unspecified") {
           print("User already set. Do not redirect to profile page");
         } else {
           Navigator.push(
@@ -1308,7 +1312,6 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Future<Const.ConfirmAction> _asyncRateRouteDialog(
       BuildContext context, int routeIndex, bool isBus) async {
-
     return showDialog<Const.ConfirmAction>(
       context: context,
       barrierDismissible: false, // user must tap button to close dialog!

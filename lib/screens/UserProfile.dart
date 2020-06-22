@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:numberpicker/numberpicker.dart';
-import 'package:WeRoute/models/User.dart';
+import 'package:routing/models/User.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/UserService.dart';
 

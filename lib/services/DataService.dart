@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:WeRoute/Constants.dart';
-import 'package:WeRoute/models/AllRoutesJSON.dart';
-import 'package:WeRoute/models/LocationJSON.dart';
-import 'package:WeRoute/models/StopsJSON.dart';
+import 'package:routing/Constants.dart';
+import 'package:routing/models/AllRoutesJSON.dart';
+import 'package:routing/models/LocationJSON.dart';
+import 'package:routing/models/StopsJSON.dart';
 
 class DataService {
   Future<List<StopsJSON>> fetchData(LatLngBounds bounds) async {

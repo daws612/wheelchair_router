@@ -1,5 +1,5 @@
-import 'package:WeRoute/models/LocationJSON.dart';
-import 'package:WeRoute/models/StopsJSON.dart';
+import 'package:routing/models/LocationJSON.dart';
+import 'package:routing/models/StopsJSON.dart';
 
 class AllRoutesJSON {
   final List<WalkPathJSON> walkingDirections;

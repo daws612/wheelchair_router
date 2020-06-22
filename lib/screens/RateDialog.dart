@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:WeRoute/Constants.dart';
-import 'package:WeRoute/models/AllRoutesJSON.dart';
-import 'package:WeRoute/services/UserService.dart';
+import 'package:routing/Constants.dart';
+import 'package:routing/models/AllRoutesJSON.dart';
+import 'package:routing/services/UserService.dart';
 import 'package:smooth_star_rating/smooth_star_rating.dart';
 
 class RateDialog extends StatefulWidget {

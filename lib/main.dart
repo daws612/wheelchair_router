@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'services/UserService.dart';
-import 'package:WeRoute/screens/MainScreen.dart';
+import 'package:routing/screens/MainScreen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:WeRoute/services/UserService.dart';
+import 'package:routing/services/UserService.dart';
 
 class UserLocationLoggerService {
   static Future<void>logCurrentLocation(Geolocator _geolocator, String origin, String destination) async {

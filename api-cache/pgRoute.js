@@ -23,7 +23,7 @@ async function getSidewalkDirections(originlat, originlon, destlat, destlon, fir
       "(SELECT source " +
       "FROM izmit.izmit_noded " +
       "WHERE ST_Distance( " +
-      "ST_StartPoint(ST_geometryn(wkb_geometry,1)), " +
+      "wkb_geometry, " +
       "ST_SetSRID(ST_MakePoint($1, $2), 4326), " +
       "true " +
       ") < 500 ORDER BY wkb_geometry <-> ST_SetSRID(ST_Point($1, $2),4326) ASC " +
@@ -31,7 +31,7 @@ async function getSidewalkDirections(originlat, originlon, destlat, destlon, fir
       "(SELECT source " +
       "FROM izmit.izmit_noded  " +
       "WHERE ST_Distance( " +
-      "ST_StartPoint(ST_geometryn(wkb_geometry,1)), " +
+      "wkb_geometry, " +
       "ST_SetSRID(ST_MakePoint($3, $4), 4326), " +
       "true " +
       ") < 500 ORDER BY wkb_geometry <-> ST_SetSRID(ST_Point($3, $4),4326) ASC LIMIT 1), false " +

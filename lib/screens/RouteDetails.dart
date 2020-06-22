@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:WeRoute/models/AllRoutesJSON.dart';
-import 'package:WeRoute/screens/WalkingDirections.dart';
+import 'package:routing/models/AllRoutesJSON.dart';
+import 'package:routing/screens/WalkingDirections.dart';
 
 import 'BusRouteDetails.dart';
 

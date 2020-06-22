@@ -6,6 +6,7 @@ from sklearn_pandas import DataFrameMapper
 import pickle
 from sklearn.preprocessing import OneHotEncoder
 from matplotlib import pyplot as plt
+import joblib
 
 # We need to know how many clusters to make.
 N_CLUSTERS = 2
@@ -58,7 +59,7 @@ scaler = StandardScaler().fit(data_to_standardize)
 # Standardize the data
 standardized_data = train_processed.copy()
 standardized_columns = scaler.transform(data_to_standardize)
-standardized_data[cols_to_standardize] = standardized_columns
+standardized_data[cols_to_standardize] = data_to_standardize #standardized_columns
 
 # It's helpful to double check that the final data looks good.
 # print('Sample of data to use:')
@@ -73,7 +74,7 @@ standardized_data[cols_to_standardize] = standardized_columns
 
 #model = KMeans(n_clusters=N_CLUSTERS).fit(standardized_data)
 model = KMeans(
-        n_clusters=3, init='random',
+        n_clusters=2, init='random',
         n_init=10, max_iter=300,
         tol=1e-04, random_state=0
     ).fit(standardized_data)
@@ -84,6 +85,8 @@ standardized_data['cluster_id'] = model.labels_
 
 print("Results:")
 print(standardized_data)
+
+joblib.dump(model, "KmeansModel.pkl");
 
 test_data = pd.read_csv('~/Documents/Thesis/wheelchair_router/collab/pg/user_test.csv',
 usecols=['user_id', 'gender','age','wheelchair_type'])
@@ -118,7 +121,7 @@ test_data_to_standardize = test_processed[test_cols_to_standardize]
 # Standardize the data
 test_standardized_data = test_processed.copy()
 test_standardized_columns = scaler.transform(test_data_to_standardize)
-test_standardized_data[test_cols_to_standardize] = test_standardized_columns
+test_standardized_data[test_cols_to_standardize] = test_data_to_standardize #test_standardized_columns
 
 # It's helpful to double check that the final data looks good.
 # print('Sample of data to use:')
@@ -127,9 +130,9 @@ test_standardized_data[test_cols_to_standardize] = test_standardized_columns
 # print(test_standardized_data.shape)
 
 # print(test_processed)
-
-test_prediction = model.predict(test_standardized_data)
-print(model.cluster_centers_)
+loaded_model = joblib.load("KmeansModel.pkl")
+test_prediction = loaded_model.predict(test_standardized_data)
+print(loaded_model.cluster_centers_)
 
 test_standardized_data['user_id'] = test_data.user_id.values
 test_standardized_data['cluster_id'] = test_prediction
@@ -151,12 +154,16 @@ print(Route_Mean)
 
 clusterPlot = plt.figure(1, figsize=(6, 6))
 plt.scatter(standardized_data.iloc[:, 4], standardized_data.iloc[:, 2], c=cluster, s=10, cmap='viridis')
-plt.scatter(test_standardized_data.iloc[:, 4], test_standardized_data.iloc[:, 2], c='green', s=10)
+plt.scatter(test_standardized_data.iloc[:, 4], test_standardized_data.iloc[:, 2], c='green', s=100)
 
-centers = model.cluster_centers_
+centers = loaded_model.cluster_centers_
 plt.scatter(centers[:, 4], centers[:, 2], c='grey', s=200, alpha=0.1);
-#clusterPlot.show()
 
+plt.xlabel(standardized_data.columns[4])
+plt.ylabel(standardized_data.columns[2])
+#plt.show()
+
+#ELBOW METHOD
 # calculate distortion for a range of number of cluster
 elbowPlot = plt.figure(2);
 distortions = []

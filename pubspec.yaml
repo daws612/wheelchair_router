@@ -1,4 +1,4 @@
-name: WeRoute
+name: routing
 description: A routing application for Izmit that focuses on accessibility options.
 
 # The following defines the version and build number for your application.
@@ -29,7 +29,7 @@ dependencies:
   geolocator: '^5.0.0'
   geocoder: ^0.2.1
   flutter_google_places: ^0.2.3
-  dio: ^2.1.13
+  dio: ^3.0.9
   flutter_polyline_points: ^0.1.0
   cloud_functions: ^0.4.1+6
   http: ^0.12.0+2
