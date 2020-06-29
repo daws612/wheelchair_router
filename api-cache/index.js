@@ -10,6 +10,7 @@ const userLocationLogger = require('./userLocationLogger');
 const pgRoute = require('./pgRoute');
 var logFileName = __dirname + '/api-cache.log';
 const saveRating = require('./saveRating');
+const getRecommendation = require('./getRecommendation');
 
 var server = restify.createServer();
 server.use(restify.plugins.bodyParser()); //---Used for post
@@ -23,6 +24,8 @@ server.get('/pgroute', pgRoute.pgRoute);
 server.get('/userLocationLogger', userLocationLogger.logCurrentLocation);
 
 server.post('/saveRating', saveRating.saveRating);
+
+server.get('/getrecommendation', getRecommendation.httpGetRecommendation);
 
 //log to file
 var logFile = fs.createWriteStream(logFileName, { flags: 'a' });

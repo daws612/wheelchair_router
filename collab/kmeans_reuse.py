@@ -59,7 +59,8 @@ scaler = StandardScaler().fit(data_to_standardize)
 # Standardize the data
 standardized_data = train_processed.copy()
 standardized_columns = scaler.transform(data_to_standardize)
-standardized_data[cols_to_standardize] = data_to_standardize #standardized_columns
+standardized_data[cols_to_standardize] = standardized_columns
+joblib.dump(scaler, "Scaler.pkl")
 
 # It's helpful to double check that the final data looks good.
 # print('Sample of data to use:')
@@ -87,6 +88,7 @@ print("Results:")
 print(standardized_data)
 
 joblib.dump(model, "KmeansModel.pkl");
+joblib.dump(standardized_data, "standardized_data.pkl");
 
 test_data = pd.read_csv('~/Documents/Thesis/wheelchair_router/collab/pg/user_test.csv',
 usecols=['user_id', 'gender','age','wheelchair_type'])
@@ -118,10 +120,11 @@ test_data_to_standardize = test_processed[test_cols_to_standardize]
 # Create the scaler.
 #scaler = StandardScaler().fit(test_data_to_standardize)
 
+loaded_scaler = joblib.load("Scaler.pkl")
 # Standardize the data
 test_standardized_data = test_processed.copy()
-test_standardized_columns = scaler.transform(test_data_to_standardize)
-test_standardized_data[test_cols_to_standardize] = test_data_to_standardize #test_standardized_columns
+test_standardized_columns = loaded_scaler.transform(test_data_to_standardize)
+test_standardized_data[test_cols_to_standardize] = test_standardized_columns
 
 # It's helpful to double check that the final data looks good.
 # print('Sample of data to use:')
