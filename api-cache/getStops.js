@@ -12,19 +12,19 @@ async function getBusStops(req, res, next) {
         nelon = params.nelon; //d
 
         var sql = "SELECT * FROM stops WHERE " +
-            "(CASE WHEN ? < ? " +
-            "THEN stop_lat BETWEEN ? AND ? " +
-            "ELSE stop_lat BETWEEN ? AND ? " +
+            "(CASE WHEN $1 < $2 " +
+            "THEN stop_lat BETWEEN $3 AND $4 " +
+            "ELSE stop_lat BETWEEN $5 AND $6 " +
             "END)  " +
             "AND " +
-            "(CASE WHEN ? < ? " +
-            "THEN stop_lon BETWEEN ? AND ? " +
-            "ELSE stop_lon BETWEEN ? AND ? " +
+            "(CASE WHEN $7 < $8 " +
+            "THEN stop_lon BETWEEN $9 AND $10 " +
+            "ELSE stop_lon BETWEEN $11 AND $12 " +
             "END)";
 
-        var busStops = await commons.pool.query(sql, [swlat, nelat, swlat, nelat, nelat, swlat, swlon, nelon, swlon, nelon, nelon, swlon]);
+        var busStops = await commons.pgPool.query(sql, [swlat, nelat, swlat, nelat, nelat, swlat, swlon, nelon, swlon, nelon, nelon, swlon]);
 
-        res.send(busStops);
+        res.send(busStops.rows);
 
     } catch (ex) {
         console.error('Unexpected exception occurred when trying to get directions \n' + ex);

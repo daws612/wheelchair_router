@@ -14,36 +14,36 @@ const pgPool = new PGPool({
     port: 5432,
 });
 
-var pool = mysql.createPool({
-    connectionLimit: 100,
-    host: config.schema.host,
-    user: config.schema.user,
-    password: config.schema.password,
-    database: config.schema.db
-});
+// var pool = mysql.createPool({
+//     connectionLimit: 100,
+//     host: config.schema.host,
+//     user: config.schema.user,
+//     password: config.schema.password,
+//     database: config.schema.db
+// });
 
 
 // Ping database to check for common exception errors.
-pool.getConnection((err, connection) => {
-    if (err) {
-        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-            console.error('Database connection was closed.')
-        }
-        if (err.code === 'ER_CON_COUNT_ERROR') {
-            console.error('Database has too many connections.')
-        }
-        if (err.code === 'ECONNREFUSED') {
-            console.error('Database connection was refused.')
-        }
-    }
+// pgPool.getConnection((err, connection) => {
+//     if (err) {
+//         if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+//             console.error('Database connection was closed.')
+//         }
+//         if (err.code === 'ER_CON_COUNT_ERROR') {
+//             console.error('Database has too many connections.')
+//         }
+//         if (err.code === 'ECONNREFUSED') {
+//             console.error('Database connection was refused.')
+//         }
+//     }
 
-    if (connection) connection.release()
+//     if (connection) connection.release()
 
-    return
-});
+//     return
+// });
 
 // Promisify for Node.js async/await.
-pool.query = util.promisify(pool.query);
+pgPool.query = util.promisify(pgPool.query);
 
 client = restify_clients.createJsonClient({
     url: config.google.directions.url,
@@ -65,7 +65,7 @@ function fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, d
             client.get(googleUrl, async function (cerr, creq, cres, cobj) {
 
                 if (cobj == undefined) {
-                    console.error('Google Directions API call did not return successfully. Something is wrong');
+                    console.error('Google Directions API call did not return successfully. Something is wrong',  + cerr);
                     resolve('');
                     return;
                 }
@@ -73,7 +73,8 @@ function fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, d
                 console.log(util.format('Successfully returned from google api %s \n', googleUrl));
 
                 await saveCacheData(origin, destination, cobj, tableName, fieldName, directionsMode);
-                resolve(JSON.stringify(cobj));
+                //resolve(JSON.stringify(cobj));
+                resolve(cobj);
             });
 
         } catch (ex) {
@@ -89,24 +90,24 @@ function fetchDataFromCache(origin, destination, tableName, fieldName, googleUrl
         return new Promise(async (resolve, reject) => {
             var sqlQuery;
             if (fieldName === "polyline_json")
-                sqlQuery = util.format('SELECT id, %s FROM %s WHERE origin = "%s" AND destination = "%s" and mode = "%s"', fieldName, tableName, origin, destination, directionsMode);
+                sqlQuery = util.format("SELECT id, %s FROM %s WHERE origin = '%s' AND destination = '%s' and mode = '%s'", fieldName, "izmit." + tableName, origin, destination, directionsMode);
             else
-                sqlQuery = util.format('SELECT id, %s FROM %s WHERE origin = "%s" AND destination = "%s"', fieldName, tableName, origin, destination);
-            var queryResult = await pool.query(sqlQuery);
-            if (queryResult.length === 0) {
-                resolve(fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, directionsMode));
+                sqlQuery = util.format("SELECT id, %s FROM %s WHERE origin = '%s' AND destination = '%s'", fieldName, "izmit." + tableName, origin, destination);
+            var queryResult = await pgPool.query(sqlQuery);
+            if (queryResult.rowCount === 0) {
+                resolve(fetchFromGoogle(origin, destination, googleUrl, "izmit." + tableName, fieldName, directionsMode));
             } else {
                 if (fieldName === "polyline_json")
-                    resolve(queryResult[0].polyline_json);
+                    resolve(queryResult.rows[0].polyline_json);
                 else if (fieldName === "elevation_json") {
-                    if (queryResult[0].elevation_json == "null") {
-                        await pool.query(util.format('DELETE FROM %s WHERE origin = "%s" AND destination = "%s"', tableName, origin, destination));
-                        resolve(fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, directionsMode));
+                    if (queryResult.rows[0].elevation_json == "null") {
+                        await pgPool.query(util.format("DELETE FROM %s WHERE origin = '%s' AND destination = '%s'", "izmit." + tableName, origin, destination));
+                        resolve(fetchFromGoogle(origin, destination, googleUrl, "izmit." + tableName, fieldName, directionsMode));
                     } else
-                        resolve(queryResult[0].elevation_json)
+                        resolve(queryResult.rows[0].elevation_json)
                 }
                 else
-                    resolve(queryResult);
+                    resolve(queryResult.rows);
 
             }
         });
@@ -121,14 +122,14 @@ async function saveCacheData(origin, destination, cobj, tableName, fieldName, di
     //util.format('?origin=%s&destination=%s&mode=driving&key=%s', origin, destination, config.google.apikey);
     var sqlQuery;
     if (fieldName === "polyline_json")
-        sqlQuery = util.format('INSERT INTO %s(origin,destination,%s,mode) VALUES(?,?,?,"%s")', tableName, fieldName, directionsMode);
+        sqlQuery = util.format("INSERT INTO %s(origin,destination,%s,mode) VALUES($1,$2,$3,'%s')", tableName, fieldName, directionsMode);
     else {
         if (cobj.status === "OK")
-            sqlQuery = util.format('INSERT INTO %s(origin,destination,%s) VALUES(?,?,?)', tableName, fieldName);
+            sqlQuery = util.format("INSERT INTO %s(origin,destination,%s) VALUES($1,$2,$3)", tableName, fieldName);
         else
             return;
     }
-    await pool.query(sqlQuery, [origin, destination, JSON.stringify(cobj)]);
+    await pgPool.query(sqlQuery, [origin, destination, cobj]);
 
 }
 
@@ -153,28 +154,34 @@ async function getSidewalkOrWalkingDirections(originlat, originlon, destlat, des
     }
 }
 
-async function saveRouteInfo(originlat, originlon, destlat, destlon, routeName) {
+async function saveRouteInfo(originlat, originlon, destlat, destlon, routeName, trip_id) {
     //Save to db if first time queried
     //insert route details
-    var route = "INSERT INTO izmit.routes(orig_lat, orig_lon, dest_lat, dest_lon, route_name, distance) values( " +
+    var route = "INSERT INTO izmit.routes(orig_lat, orig_lon, dest_lat, dest_lon, route_name, distance, trip_id) values( " +
         "$1, $2, " +
         "$3, $4, $5, " +
         "ST_Distance( " +
         " ST_SetSRID(ST_MakePoint($2, $1), 4326), " +
         "ST_SetSRID(ST_MakePoint($4, $3), 4326), " +
         "true " +
-        ") " +
+        "), $6 " +
         ") ON CONFLICT (orig_lat, orig_lon, dest_lat, dest_lon, route_name) DO NOTHING RETURNING route_id ;";
 
-    var routeid = await pgPool.query(route, [+originlat, +originlon, +destlat, +destlon, routeName]);
+    var routeid = await pgPool.query(route, [+originlat, +originlon, +destlat, +destlon, routeName, +trip_id]);
     if (routeid.rows.length < 1) {
         route = "SELECT route_id FROM izmit.routes " +
             " WHERE orig_lon = $1 AND orig_lat = $2 " +
-            " AND dest_lon = $3 AND dest_lat = $4 AND route_name = $5;"
-        routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat, routeName]);
+            " AND dest_lon = $3 AND dest_lat = $4 AND route_name = $5"
+        if (!trip_id) {
+            route += " AND trip_id=$6"
+            routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat, routeName, trip_id]);
+        }
+        else
+            routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat, routeName]);
+
     }
 
-    if(routeid.rowCount > 1)
+    if (routeid.rowCount > 1)
         console.log("******More than one route returned**********");
 
     routeid = routeid.rows[0].route_id;
@@ -185,12 +192,12 @@ async function saveRouteInfo(originlat, originlon, destlat, destlon, routeName) 
 async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, routeName, firebaseId) {
 
     var result = [];
-    if(!firebaseId) firebaseId="test";
+    if (!firebaseId) firebaseId = "test";
 
     var route = "SELECT r.route_id, coalesce(round(avg(rating),2),0) as rating FROM izmit.routes r " +
         " LEFT JOIN izmit.route_ratings rr ON r.route_id = rr.route_id " +
-        " WHERE orig_lon = $1 AND orig_lat = $2 " +
-        " AND dest_lon = $3 AND dest_lat = $4 AND route_name=$5  GROUP BY r.route_id;"
+        " WHERE r.orig_lon = $1 AND r.orig_lat = $2 " +
+        " AND r.dest_lon = $3 AND r.dest_lat = $4 AND route_name=$5  GROUP BY r.route_id;"
     var routeid = await pgPool.query(route, [originlon, originlat, destlon, destlat, routeName]);
 
     if (routeid.rowCount == 0)
@@ -219,7 +226,7 @@ async function fetchRouteSegmentsFromDB(originlat, originlon, destlat, destlon, 
 function formatResult(results, rating, routeid) {
 
     var path = [];
-    var distance =0;
+    var distance = 0;
     for (i = 0; i < results.length; i++) {
         var origin = { lat: results[i].y1, lng: results[i].x1 };
         var destination = { lat: results[i].y2, lng: results[i].x2 };
@@ -235,11 +242,11 @@ function formatResult(results, rating, routeid) {
     //assuming speed is 1.4meters/sec
     var duration = distance / 1.4;
 
-    var response = { polyline: "", pathData: path, distance: Math.ceil( distance ), duration: Math.ceil( duration ), rating: rating, dbRouteId: routeid };
+    var response = { polyline: "", pathData: path, distance: Math.ceil(distance), duration: Math.ceil(duration), rating: rating, dbRouteId: routeid };
     return response;
 }
 
-module.exports.pool = pool;
+//module.exports.pool = pool;
 module.exports.fetchFromGoogle = fetchFromGoogle;
 module.exports.fetchDataFromCache = fetchDataFromCache;
 module.exports.getSidewalkOrWalkingDirections = getSidewalkOrWalkingDirections;

@@ -29,7 +29,7 @@ async function getWalkingDirections(originHttp, destinationHttp, allOptions, fir
         var googleUrlDirections = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=walking&alternatives=true&key=%s', originHttp, destinationHttp, config.google.apikey);
 
         var polyResults = await commons.fetchDataFromCache(originHttp, destinationHttp, "polyline_path", "polyline_json", googleUrlDirections, "walking");
-        var polyline = JSON.parse(polyResults);
+        var polyline =  polyResults; // JSON.parse(polyResults);
         if (polyline.routes.length === 0)
             resolve(result);
 
@@ -78,7 +78,7 @@ async function getElevation(originHttp, destinationHttp, route, firebaseId) {
 
             //decode the polyline to get the points on the route
             var path = decode(polyline);
-            var routeid = await commons.saveRouteInfo(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk");
+            var routeid = await commons.saveRouteInfo(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk", null);
 
             //get elevation between each 2 consecutive points on a path
             var pathData = [];
@@ -134,7 +134,7 @@ async function calculateSlope(originlat, originlon, destinationlat, destinationl
 
         var googleUrlElevation = config.google.elevation.url + util.format('?path=%s|%s&samples=2&mode=walking&key=%s', origin, destination, config.google.apikey);
         var elevResult = await commons.fetchDataFromCache(origin, destination, "elevation_path", "elevation_json", googleUrlElevation, "walking");
-        var elevation = JSON.parse(elevResult);
+        var elevation = elevResult; //JSON.parse(elevResult);
 
         var run = getDistance(originlat, originlon, destinationlat, destinationlon);
         var rise = elevation.results[1].elevation - elevation.results[0].elevation; // if negative, down slope

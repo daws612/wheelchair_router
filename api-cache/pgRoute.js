@@ -64,7 +64,7 @@ async function saveRouteInfo(originlat, originlon, destlat, destlon, results) {
   else
     results = results.rows;
   
-  var routeid = await commons.saveRouteInfo(originlat, originlon, destlat, destlon, "sidewalk");
+  var routeid = await commons.saveRouteInfo(originlat, originlon, destlat, destlon, "sidewalk", null);
 
   //insert each row segment
   for (var i = 0; i < results.length; i++) {

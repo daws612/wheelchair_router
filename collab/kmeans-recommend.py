@@ -17,7 +17,7 @@ def read_in():
 
 def main():
     #get our data as an array from read_in()
-    lines = read_in()
+    #lines = read_in()
     
     # We need to know how many clusters to make.
     N_CLUSTERS = 2
@@ -83,7 +83,11 @@ def main():
 
     standardized_data = joblib.load("standardized_data.pkl")
     test_group = standardized_data.query('cluster_id == ' + str(test_prediction))
-    print(test_group["user_id"].values)
+    cluster_userids = test_group["user_id"].values.tolist()
+    #print(', '.join(str(cluster_userids)))
+    print(','.join([str(x) for x in cluster_userids]))
+    #for entry in test_group["user_id"].values:
+        #print(entry)
 
     #get rating data of all users in our cluster
     ratings_data = pd.read_csv('~/Documents/Thesis/wheelchair_router/collab/pg/route_ratings.csv')

@@ -9,8 +9,9 @@
 --     dest_lon double precision NOT NULL,
 --     orig_lat double precision NOT NULL,
 --     orig_lon double precision NOT NULL,
+--     trip_id bigint,
 --     CONSTRAINT routes_pkey PRIMARY KEY (route_id),
---     CONSTRAINT origin_destination_name_unique UNIQUE (dest_lat, dest_lon, orig_lat, orig_lon, route_name)
+--     CONSTRAINT origin_destination_name_unique UNIQUE (dest_lat, dest_lon, orig_lat, orig_lon, route_name, trip_id)
 
 -- )
 -- WITH (
@@ -82,7 +83,13 @@
 --     route_id bigint NOT NULL,
 --     user_id bigint NOT NULL,
 --     rating integer,
+--     route_sections character varying(255) COLLATE pg_catalog."default",
+--     orig_lat double precision NOT NULL,
+--     orig_lon double precision NOT NULL,
+--     dest_lat double precision NOT NULL,
+--     dest_lon double precision NOT NULL,
 --     comment text COLLATE pg_catalog."default",
+--     "timestamp" timestamp without time zone NOT NULL DEFAULT now(),
 --     CONSTRAINT route_ratings_pkey PRIMARY KEY (id),
 --     CONSTRAINT fk_routes FOREIGN KEY (route_id)
 --         REFERENCES izmit.routes (route_id) MATCH SIMPLE
@@ -214,3 +221,33 @@
 -- select pgr_createVerticesTable('izmit.izmit_noded','wkb_geometry','source','target');
 -- select pgr_analyzegraph('izmit.izmit_noded', 0.000001,  the_geom:='wkb_geometry', id:='id');
 -- select pgr_analyzeOneway('izmit.izmit_noded', 0.000001,  the_geom:='wkb_geometry', id:='id');
+
+
+-- CREATE TABLE izmit.elevation_path
+-- (
+--     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
+--     origin double precision NOT NULL,
+--     destination double precision NOT NULL,
+--     elevation_json json NOT NULL,
+--     CONSTRAINT elevation_path_pkey PRIMARY KEY (id)
+-- )
+-- WITH (
+--     OIDS = FALSE
+-- )
+-- TABLESPACE pg_default;
+
+-- CREATE TABLE izmit.polyline_path
+-- (
+--     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
+--     origin double precision NOT NULL,
+--     destination double precision NOT NULL,
+--     polyline_json json NOT NULL,
+--     CONSTRAINT polyline_path_pkey PRIMARY KEY (id)
+-- )
+-- WITH (
+--     OIDS = FALSE
+-- )
+-- TABLESPACE pg_default;
+
+-- ALTER TABLE izmit.polyline_path
+--     OWNER to wheelchair_routing;
