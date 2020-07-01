@@ -9,10 +9,9 @@
 --     dest_lon double precision NOT NULL,
 --     orig_lat double precision NOT NULL,
 --     orig_lon double precision NOT NULL,
---     trip_id bigint,
+--     trip_id integer,
 --     CONSTRAINT routes_pkey PRIMARY KEY (route_id),
---     CONSTRAINT origin_destination_name_unique UNIQUE (dest_lat, dest_lon, orig_lat, orig_lon, route_name, trip_id)
-
+--     CONSTRAINT origin_destination_name_unique UNIQUE (dest_lat, dest_lon, orig_lat, orig_lon, route_name)
 -- )
 -- WITH (
 --     OIDS = FALSE
@@ -83,12 +82,12 @@
 --     route_id bigint NOT NULL,
 --     user_id bigint NOT NULL,
 --     rating integer,
---     route_sections character varying(255) COLLATE pg_catalog."default",
---     orig_lat double precision NOT NULL,
---     orig_lon double precision NOT NULL,
---     dest_lat double precision NOT NULL,
---     dest_lon double precision NOT NULL,
 --     comment text COLLATE pg_catalog."default",
+--     route_sections character varying(255) COLLATE pg_catalog."default",
+--     orig_lat double precision,
+--     orig_lon double precision,
+--     dest_lat double precision,
+--     dest_lon double precision,
 --     "timestamp" timestamp without time zone NOT NULL DEFAULT now(),
 --     CONSTRAINT route_ratings_pkey PRIMARY KEY (id),
 --     CONSTRAINT fk_routes FOREIGN KEY (route_id)
@@ -226,9 +225,9 @@
 -- CREATE TABLE izmit.elevation_path
 -- (
 --     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
---     origin double precision NOT NULL,
---     destination double precision NOT NULL,
 --     elevation_json json NOT NULL,
+--     origin character varying(255) COLLATE pg_catalog."default" NOT NULL,
+--     destination character varying(255) COLLATE pg_catalog."default" NOT NULL,
 --     CONSTRAINT elevation_path_pkey PRIMARY KEY (id)
 -- )
 -- WITH (
@@ -239,9 +238,10 @@
 -- CREATE TABLE izmit.polyline_path
 -- (
 --     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
---     origin double precision NOT NULL,
---     destination double precision NOT NULL,
 --     polyline_json json NOT NULL,
+--     origin character varying(255) COLLATE pg_catalog."default" NOT NULL,
+--     destination character varying(255) COLLATE pg_catalog."default" NOT NULL,
+--     mode character varying(255) COLLATE pg_catalog."default" NOT NULL,
 --     CONSTRAINT polyline_path_pkey PRIMARY KEY (id)
 -- )
 -- WITH (

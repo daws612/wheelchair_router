@@ -49,13 +49,13 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, firebaseId) 
 
         var nearestStopQuery = "SELECT *, 'destination' as stoptype, " +
             "ST_DistanceSphere( " +
-            "st_point($1, $2), " +
-            "st_point(stop_lat, stop_lon) " +
+            "st_point($2, $1), " +
+            "st_point(stop_lon,stop_lat) " +
             ") as dist_m " +
             "FROM stops " +
             "WHERE ST_DistanceSphere( " +
-            "st_point($3, $4), " +
-            "st_point(stop_lat, stop_lon) " +
+            "st_point($4, $3), " +
+            "st_point(stop_lon, stop_lat) " +
             ") < 1000 " +
             "ORDER BY dist_m";
 
