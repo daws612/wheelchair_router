@@ -1308,7 +1308,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         width: 0,
         height: 0,
       );
-  }
+  } 
 
   Future<Const.ConfirmAction> _asyncRateRouteDialog(
       BuildContext context, int routeIndex, bool isBus) async {
@@ -1320,6 +1320,8 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           allRoutes: this.allRoutes,
           routeIndex: routeIndex,
           isBus: isBus,
+          origin: _markers["Origin"].position,
+          destination: _markers["Destination"].position
         );
       },
     );

@@ -10,4 +10,9 @@ class LocationJSON {
       longitude: json['longitude'] == null ? json['lng'] : json['longitude'],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+          'latitude': latitude,
+          'longitude': longitude,
+  };
 }
