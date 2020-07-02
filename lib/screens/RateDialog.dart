@@ -16,7 +16,7 @@ class RateDialog extends StatefulWidget {
       this.origin,
       this.destination});
 
-  final AllRoutesJSON allRoutes;
+  final RoutesWithRecommended allRoutes;
   final int routeIndex;
   final bool isBus;
   final LatLng origin;
@@ -34,7 +34,9 @@ class RateDialogState extends State<RateDialog> {
   @override
   Widget build(BuildContext context) {
     if (widget.isBus) {
-      widget.allRoutes.busRoutes.forEach((BusRoutesJSON route) {
+      var allBusRoutes = widget.allRoutes.busRoutes +
+          widget.allRoutes.recommendations.busRoutes;
+      allBusRoutes.forEach((BusRoutesJSON route) {
         if (route != null && widget.routeIndex == route.routeIndex) {
           busRoute = route;
           routeSections = [
@@ -44,8 +46,23 @@ class RateDialogState extends State<RateDialog> {
           ].join(',');
         }
       });
+      if (busRoute == null) {
+        widget.allRoutes.recommendations.busRoutes
+            .forEach((BusRoutesJSON route) {
+          if (route != null && widget.routeIndex == route.routeIndex) {
+            busRoute = route;
+            routeSections = [
+              busRoute.dbRouteId,
+              busRoute.toFirstStop[0].dbRouteId,
+              busRoute.fromLastStop[0].dbRouteId
+            ].join(',');
+          }
+        });
+      }
     } else {
-      widget.allRoutes.walkingDirections.forEach((WalkPathJSON route) {
+      var allWalkPaths = widget.allRoutes.walkingDirections +
+          widget.allRoutes.recommendations.walkingDirections;
+      allWalkPaths.forEach((WalkPathJSON route) {
         if (route != null && widget.routeIndex == route.routeIndex) {
           walkPath = route;
           routeSections = walkPath.dbRouteId;
@@ -80,7 +97,7 @@ class RateDialogState extends State<RateDialog> {
                           setState(() {});
                         },
                         starCount: 5,
-                        rating: busRoute.toFirstStop[0].rating,
+                        rating: busRoute.toFirstStop[0].rating.roundToDouble(),
                         size: 40.0,
                         filledIconData: Icons.star,
                         halfFilledIconData: Icons.star_border,
@@ -110,7 +127,7 @@ class RateDialogState extends State<RateDialog> {
                           setState(() {});
                         },
                         starCount: 5,
-                        rating: busRoute.rating,
+                        rating: busRoute.rating.roundToDouble(),
                         size: 40.0,
                         filledIconData: Icons.star,
                         halfFilledIconData: Icons.star_border,
@@ -138,7 +155,7 @@ class RateDialogState extends State<RateDialog> {
                           setState(() {});
                         },
                         starCount: 5,
-                        rating: busRoute.fromLastStop[0].rating,
+                        rating: busRoute.fromLastStop[0].rating.roundToDouble(),
                         size: 40.0,
                         filledIconData: Icons.star,
                         halfFilledIconData: Icons.star_border,
@@ -177,7 +194,7 @@ class RateDialogState extends State<RateDialog> {
                             });
                           },
                           starCount: 5,
-                          rating: walkPath.rating,
+                          rating: walkPath.rating.roundToDouble(),
                           size: 40.0,
                           filledIconData: Icons.star,
                           halfFilledIconData: Icons.star_border,

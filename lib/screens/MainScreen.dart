@@ -57,7 +57,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Map<PolylineId, Polyline> polylines = {};
   List<RoutesJSON> routes = [];
-  AllRoutes.AllRoutesJSON allRoutes;
+  AllRoutes.RoutesWithRecommended allRoutes;
   int selectedRoute = 0;
 
   String _progressText = 'Loading';
@@ -867,7 +867,18 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       ),
     );
 
-    if (allRoutes != null) _renderRoutes();
+    if (allRoutes != null) {
+      //show first recommended bus route by default
+      selectedRoute = allRoutes.recommendations.busRoutes.length > 0
+          ? allRoutes.recommendations.busRoutes[0].routeIndex
+          : 0;
+      //show recommended walk path if no bus route available else show path 0
+      selectedRoute = selectedRoute == 0 &&
+              allRoutes.recommendations.walkingDirections.length > 0
+          ? allRoutes.recommendations.walkingDirections[0].routeIndex
+          : selectedRoute;
+      _renderRoutes();
+    }
   }
 
   _renderBusRoute(AllRoutes.BusRoutesJSON route) {
@@ -986,7 +997,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   _renderRoutes() {
     polylines.clear();
     bool clearWalkRoutes = true;
-    allRoutes.walkingDirections.forEach((AllRoutes.WalkPathJSON route) {
+    var allWalkPaths = allRoutes.walkingDirections +
+        allRoutes.recommendations.walkingDirections;
+    allWalkPaths.forEach((AllRoutes.WalkPathJSON route) {
       _renderWalkRoute(route);
       if (route != null && selectedRoute == route.routeIndex) {
         clearWalkRoutes = false; //selected route is walk route, dont clear
@@ -996,7 +1009,9 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (clearWalkRoutes) {
       polylines.clear(); //if we are showing bus routes, dont show walk routes
 
-      allRoutes.busRoutes.forEach((AllRoutes.BusRoutesJSON route) {
+      var allBusRoutes =
+          allRoutes.busRoutes + allRoutes.recommendations.busRoutes;
+      allBusRoutes.forEach((AllRoutes.BusRoutesJSON route) {
         if (route != null && selectedRoute == route.routeIndex)
           _renderBusRoute(route);
       });
@@ -1308,7 +1323,7 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         width: 0,
         height: 0,
       );
-  } 
+  }
 
   Future<Const.ConfirmAction> _asyncRateRouteDialog(
       BuildContext context, int routeIndex, bool isBus) async {
@@ -1317,12 +1332,11 @@ class MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       barrierDismissible: false, // user must tap button to close dialog!
       builder: (BuildContext context) {
         return RateDialog(
-          allRoutes: this.allRoutes,
-          routeIndex: routeIndex,
-          isBus: isBus,
-          origin: _markers["Origin"].position,
-          destination: _markers["Destination"].position
-        );
+            allRoutes: this.allRoutes,
+            routeIndex: routeIndex,
+            isBus: isBus,
+            origin: _markers["Origin"].position,
+            destination: _markers["Destination"].position);
       },
     );
   }

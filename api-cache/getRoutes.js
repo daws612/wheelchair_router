@@ -2,6 +2,7 @@ const config = require('./config');
 const commons = require('./commons');
 const util = require('util');
 const getElevation = require('./getElevation');
+const getRecommendation = require('./getRecommendation');
 
 async function performRouting(req, res, next) {
     var response = { busRoutes: "", walkingDirections: "", recommendations: "" };
@@ -20,9 +21,23 @@ async function performRouting(req, res, next) {
 
         var walkingDirections = await commons.getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon, firebaseId); //await getWalkingRoutes(originHttp, destinationHttp);
         var busRoutes = await getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp, firebaseId);
+        var recommendations = await getRecommendation.getRecommendation(originlat, originlon, destlat, destlon);
+
+        //remove duplicate routes that are already in recommendation
+        if (recommendations.length > 0) {
+            if (recommendations.busRoutes.length > 0) {
+                const recommendedRouteIds = [...new Set(recommendations.busRoutes.map(route => route.route_id))];
+                busRoutes = busRoutes.filter(route => !recommendedRouteIds.includes(route.route_id));
+            }
+            if (recommendations.walkingDirections.length > 0) {
+                const recommendedWalkIds = [...new Set(recommendations.walkingDirections.map(route => route.dbRouteId))];
+                walkingDirections = walkingDirections.filter(route => !recommendedWalkIds.includes(route.dbRouteId));
+            }
+        }
 
         response.walkingDirections = walkingDirections;
         response.busRoutes = busRoutes;
+        response.recommendations = recommendations;
 
         res.send(response);
     } catch (ex) {
@@ -149,7 +164,7 @@ async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, neare
         "and b.stop_id = $2 " +
         "and a.trip_id = b.trip_id " +
         //"and a.departure_time between '09:00' and TIME(DATE_ADD('2019-01-07 09:00', INTERVAL 15 MINUTE)) " +
-        " and a.departure_time > to_char(current_timestamp, 'HH24:MI:SS') and a.departure_time < to_char(now()::time + INTERVAL '30 min', 'HH24:MI:SS') "+
+        " and a.departure_time > to_char(current_timestamp, 'HH24:MI:SS') and a.departure_time < to_char(now()::time + INTERVAL '30 min', 'HH24:MI:SS') " +
         "and t.service_id = (case  " +
         "when extract(dow from  current_date) between 1 and 5 then '1' " +
         "when extract(dow from  current_date) = 0 then '3' " +

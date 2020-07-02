@@ -254,13 +254,16 @@
 
 
 -- TODO ADD USER_IDS
+
 -- CREATE OR REPLACE PROCEDURE izmit.getRecommendedRoutes(
 -- 	originlat double precision,
 -- 	originlon double precision,
 -- 	destlat double precision,
 -- 	destlon double precision,
 -- 	radius double precision,
--- 	min_score double precision, inout rec text[])
+-- 	min_score double precision, 
+-- 	cluster_userids text,
+-- 	inout rec text[])
 -- AS $BODY$
 -- DECLARE
 	
@@ -280,6 +283,7 @@
 -- 		LEFT JOIN izmit.routes r ON r.route_id = rr.route_id 
 -- 		WHERE ST_DistanceSphere(st_point(originlon, originlat), st_point(rr.orig_lon, rr.orig_lat)) < radius
 -- 		AND ST_DistanceSphere(st_point(destlon, destlat), st_point(rr.dest_lon, rr.dest_lat)) < radius
+-- 		and user_id = any(string_to_array(cluster_userids, ',')::bigint[])
 -- 		GROUP BY r.route_id, rr.orig_lon, rr.orig_lat, rr.dest_lon, rr.dest_lat, rr.route_sections
 -- 		Order by orig_dist_m, dest_dist_m
 -- 	) rates);
@@ -289,10 +293,12 @@
 -- 	FOREACH route_section SLICE 0 IN ARRAY sections
 -- 	  LOOP
 -- 		RAISE INFO 'Getting average of %', route_section;
--- 		select coalesce(round(avg(section_rating),2),0) into score from (select coalesce(round(avg(rating),2),0) as section_rating 
--- 		from izmit.route_ratings
--- 		where route_id = any(string_to_array(route_section, ',')::bigint[])
--- 		group by route_id) avg_of_sections;
+-- 		select coalesce(round(avg(section_rating),2),0) into score from (
+-- 			select coalesce(round(avg(rating),2),0) as section_rating 
+-- 			from izmit.route_ratings
+-- 			where route_id = any(string_to_array(route_section, ',')::bigint[])
+-- 			and user_id = any(string_to_array(cluster_userids, ',')::bigint[])
+-- 			group by route_id) avg_of_sections;
 -- 		raise info 'Score: %', score;
 		
 -- 		IF score >= min_score THEN

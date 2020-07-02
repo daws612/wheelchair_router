@@ -27,7 +27,7 @@ async function httpGetRecommendation(req, res, next) {
 
 async function getRecommendation(originlat, originlon, destlat, destlon) {
     return new Promise(async (resolve, reject) => {
-        var result = [];
+        var result = { busRoutes: [], walkingDirections: [] };
 
         var spawn = require('child_process').spawn,
             py = spawn('python', [require.resolve("../collab/kmeans-recommend.py")]),
@@ -50,13 +50,14 @@ async function getRecommendation(originlat, originlon, destlat, destlon) {
 }
 
 async function getTopRatedRoutes(originlat, originlon, destlat, destlon, cluster_userids) {
-    var response = [];
+    var response = { busRoutes: [], walkingDirections: [] };
     var radius = 100;
     var min_score = 2.3;
     var recommendations = [];
-    var routeSql = `call izmit.getRecommendedRoutes($1, $2, $3, $4, $5, $6, $7);`;
+    console.log('------------cluster users: ' + cluster_userids + ' --------------');
+    var routeSql = `call izmit.getRecommendedRoutes($1, $2, $3, $4, $5, $6, $7, $8);`;
 
-    var results = await commons.pgPool.query(routeSql, [40.8227515, 29.9283604, 40.8243215, 29.9185689, radius, min_score, recommendations]);
+    var results = await commons.pgPool.query(routeSql, [originlat, originlon, destlat, destlon, radius, min_score, '83', recommendations]);
 
     if (results.rows && results.rows.length > 0) {
         console.log(results.rows);
@@ -68,7 +69,11 @@ async function getTopRatedRoutes(originlat, originlon, destlat, destlon, cluster
 }
 
 async function reconstructRoutes(routeIds) {
-    var response = { busRoutes: "", walkingDirections: "" };
+    var response = { busRoutes: [], walkingDirections: [] };
+
+    if(!routeIds || routeIds.length < 1)
+        return response;
+
     var busRoutes = [];
     var direct = []
 
@@ -109,8 +114,9 @@ async function getBusRoute(dbRouteIds, result) {
         return result;
     } catch (ex) {
         console.error('Unexpected exception occurred when trying to reconstruct bus route \n' + ex);
-        return;
+        return result;
     }
 }
 
 module.exports.httpGetRecommendation = httpGetRecommendation;
+module.exports.getRecommendation = getRecommendation;

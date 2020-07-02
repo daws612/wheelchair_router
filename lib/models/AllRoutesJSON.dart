@@ -1,17 +1,38 @@
 import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
 
+class RoutesWithRecommended {
+  final List<WalkPathJSON> walkingDirections;
+  final List<BusRoutesJSON> busRoutes;
+  final AllRoutesJSON recommendations;
+
+  RoutesWithRecommended({this.walkingDirections, this.busRoutes, this.recommendations});
+
+  factory RoutesWithRecommended.fromJson(Map<String, dynamic> json) {
+    if (json == null) return null;
+    var walks = json['walkingDirections'] as List;
+    var bus = json['busRoutes'] as List;
+    int index = 0;
+    return new RoutesWithRecommended(
+      walkingDirections:
+          walks.map((i) => WalkPathJSON.fromJson(i, index++)).toList(),
+      busRoutes: bus.map((i) => BusRoutesJSON.fromJson(i, index++)).toList(),
+      recommendations: AllRoutesJSON.fromJson(json['recommendations'], index),
+    );
+  }
+}
+
 class AllRoutesJSON {
   final List<WalkPathJSON> walkingDirections;
   final List<BusRoutesJSON> busRoutes;
 
   AllRoutesJSON({this.walkingDirections, this.busRoutes});
 
-  factory AllRoutesJSON.fromJson(Map<String, dynamic> json) {
+  factory AllRoutesJSON.fromJson(Map<String, dynamic> json, int index) {
     if (json == null) return null;
     var walks = json['walkingDirections'] as List;
     var bus = json['busRoutes'] as List;
-    int index = 0;
+    //int index = 0;
     return new AllRoutesJSON(
       walkingDirections:
           walks.map((i) => WalkPathJSON.fromJson(i, index++)).toList(),
