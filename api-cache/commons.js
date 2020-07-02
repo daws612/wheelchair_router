@@ -65,7 +65,7 @@ function fetchFromGoogle(origin, destination, googleUrl, tableName, fieldName, d
             client.get(googleUrl, async function (cerr, creq, cres, cobj) {
 
                 if (cobj == undefined) {
-                    console.error('Google Directions API call did not return successfully. Something is wrong',  + cerr);
+                    console.error('Google Directions API call did not return successfully. Something is wrong', + cerr);
                     resolve('');
                     return;
                 }
@@ -246,6 +246,137 @@ function formatResult(results, rating, routeid) {
     return response;
 }
 
+async function constructDirectRoute(dbRouteId) {
+
+    var result = [];
+
+    var route = "SELECT r.route_id, coalesce(round(avg(rating),2),0) as rating FROM izmit.routes r " +
+        " LEFT JOIN izmit.route_ratings rr ON r.route_id = rr.route_id " +
+        " WHERE r.route_id = $1 " +
+        " GROUP BY r.route_id;"
+    var routeid = await pgPool.query(route, [dbRouteId]);
+
+    if (routeid.rowCount == 0)
+        return result;
+
+    var rating = +routeid.rows[0].rating;
+    routeid = routeid.rows[0].route_id;
+
+    var segmentsQu = "SELECT start_lat as y1, start_lon as x1, end_lat as y2, end_lon as x2, incline, length FROM izmit.route_segments rs " +
+        " JOIN izmit.segments seg ON seg.segment_id = rs.segment_id " +
+        " WHERE route_id = $1 " +
+        " order by sequence;";
+
+    var segments = await pgPool.query(segmentsQu, [routeid]);
+
+    if (segments.rowCount == 0)
+        return result;
+
+    var response = formatResult(segments.rows, rating, routeid);
+    if (response.pathData.length > 0)
+        result.push(response);
+
+    return result;
+}
+
+async function constructBusRoute(dbRouteIds, startStop, endStop, result) {
+    var timeZone = "SET TIME ZONE 'Europe/Istanbul';"
+
+    var routeQuery = `SELECT a.departure_time, b.arrival_time, r.*, t.*
+    from trips t 
+    left join routes r on t.route_id = r.route_id
+    left join stop_times a on t.trip_id = a.trip_id and a.stop_id = $1 
+    left join stop_times b on t.trip_id = b.trip_id and  b.stop_id = $2
+    where t.route_id=(select route_id from trips where trip_id = (select trip_id::text from izmit.routes where route_id=$3))
+    and t.service_id = (case when extract(dow from current_date) between 1 and 5 then '1'
+                            when extract(dow from current_date) = 0 then '3' else '2' end)
+    and a.departure_time > to_char(current_timestamp, 'HH24:MI:SS') 
+    and a.departure_time < to_char(now()::time + INTERVAL '30 min', 'HH24:MI:SS') `
+
+    await pgPool.query(timeZone);
+    var routes = await pgPool.query(routeQuery, [startStop.stop_id, endStop.stop_id, dbRouteIds[0]]);
+    routes = routes.rows;
+
+    console.log("Get route from " + startStop.stop_id + " - " + startStop.stop_name + " to " + endStop.stop_id + " - " + endStop.stop_name + " :: Found routes :: " + routes.length);
+
+    if (routes.length > 0) {
+        for (var k = 0; k < routes.length; k++) {
+            var tripId = routes[k].trip_id;
+            var routeStopsQuery = "SELECT st.stop_sequence, s.* FROM stops s " +
+                "left join stop_times st on st.stop_id = s.stop_id " +
+                "WHERE trip_id = $1  " +
+                "AND st.stop_sequence between (SELECT st.stop_sequence FROM stops s " +
+                "left join stop_times st on st.stop_id = s.stop_id " +
+                "WHERE st.stop_id = $2 and trip_id = $3 ) and (SELECT st.stop_sequence FROM stops s " +
+                "left join stop_times st on st.stop_id = s.stop_id " +
+                "WHERE st.stop_id = $4 and trip_id = $5) " +
+                "ORDER BY stop_sequence asc";
+            //howcan this query be made to include the origin and destination stops?
+            var routeStops = await pgPool.query(routeStopsQuery, [tripId, startStop.stop_id, tripId, endStop.stop_id, tripId]);
+            routeStops = routeStops.rows;
+            routes[k]['stops'] = routeStops;
+            console.log("Trip - " + tripId + " Route index: " + k + " - " + routes[k].route_short_name + " -- Number of stops found: " + routeStops.length);
+
+            if (routes[k].stops.length < 2) {
+                routes.splice(k, 1); //remove kth element
+                k--;
+                continue;
+            }
+
+            var routePolylines = [];
+            for (var l = 0; l < routeStops.length - 1; l++) {
+                var originStop = routeStops[l].stop_lat + "," + routeStops[l].stop_lon;
+                var destStop = routeStops[l + 1].stop_lat + "," + routeStops[l + 1].stop_lon;
+                //console.log("Get polyline from stop " + l + " to " + (l + 1));
+
+                var googleUrl = config.google.directions.url + util.format('?origin=%s&destination=%s&mode=driving&alternatives=true&key=%s', originStop, destStop, config.google.apikey);
+                var polylineResult = await fetchDataFromCache(originStop, destStop, "polyline_path", "polyline_json", googleUrl, "driving");
+                var polyline = polylineResult; //JSON.parse(polylineResult);
+                polyline = polyline.routes[0].overview_polyline.points;
+
+                //var polyline = await getPath.fetchPolylinePath(originStop, destStop);
+                if (polyline)
+                    routePolylines.push(polyline);
+            }
+            routes[k]['polylines'] = routePolylines;
+
+            //if stops are more than 1
+            if (routeStops.length > 1) {
+
+                var tofirstStop = await constructDirectRoute(dbRouteIds[1]);
+                var fromLastStop = await constructDirectRoute(dbRouteIds[2]);
+                console.log("Get walking route to first stop: " + routeStops[0].stop_name);
+                routes[k]["toFirstStop"] = tofirstStop;
+
+
+                console.log("Get walking route from last stop: " + routeStops[routeStops.length - 1].stop_name);
+                routes[k]["fromLastStop"] = fromLastStop;
+            }
+
+            //get routing rate
+            var route = "SELECT r.route_id,  coalesce(round(avg(rating),2),0) as rating FROM izmit.routes r " +
+                " LEFT JOIN izmit.route_ratings rr ON r.route_id = rr.route_id " +
+                " WHERE r.orig_lon = $1 AND r.orig_lat = $2 " +
+                " AND r.dest_lon = $3 AND r.dest_lat = $4 AND route_name=$5 GROUP BY r.route_id;"
+            var routeid = await pgPool.query(route, [startStop.stop_lon, startStop.stop_lat, endStop.stop_lon, endStop.stop_lat, "bus-" + routes[k].route_short_name]);
+
+            var rating = 0;
+            if (routeid.rowCount > 0)
+                rating = +routeid.rows[0].rating;
+
+            routes[k]["rating"] = rating;
+
+            //save route in db for later rating reference
+            routeid = await saveRouteInfo(startStop.stop_lat, startStop.stop_lon, endStop.stop_lat, endStop.stop_lon, "bus-" + routes[k].route_short_name, tripId);
+            routes[k]["dbRouteId"] = routeid;
+        } //for routes
+    }//if routes
+    if (routes.length > 0)
+        result = result.concat(routes);
+
+    return result;
+}
+
 //module.exports.pool = pool;
 module.exports.fetchFromGoogle = fetchFromGoogle;
 module.exports.fetchDataFromCache = fetchDataFromCache;
@@ -254,3 +385,5 @@ module.exports.saveRouteInfo = saveRouteInfo;
 module.exports.pgPool = pgPool;
 module.exports.fetchRouteSegmentsFromDB = fetchRouteSegmentsFromDB;
 module.exports.formatResult = formatResult;
+module.exports.constructBusRoute = constructBusRoute;
+module.exports.constructDirectRoute = constructDirectRoute;

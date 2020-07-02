@@ -4,7 +4,7 @@ const util = require('util');
 const getElevation = require('./getElevation');
 
 async function performRouting(req, res, next) {
-    var response = { busRoutes: "", walkingDirections: "" };
+    var response = { busRoutes: "", walkingDirections: "", recommendations: "" };
 
     try {
 
