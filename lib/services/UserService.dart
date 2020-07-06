@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:routing/Constants.dart';
 import '../models/User.dart';
 
 class UserService {
@@ -11,9 +13,11 @@ class UserService {
     print("Get user with uid :: " + uid);
     User user;
     await _firestore.collection('/users').document(uid).get().then((userDoc) {
-      if (userDoc.data == null) { return null; }
+      if (userDoc.data == null) {
+        return null;
+      }
       user = User.fromDocument(userDoc);
-    } );
+    });
     return user;
   }
 
@@ -24,12 +28,14 @@ class UserService {
   }
 
   static void updateUser(User user) {
-    _firestore.collection('/users').document(user.userId).updateData(
-      user.toJson()
-    );
+    _firestore
+        .collection('/users')
+        .document(user.userId)
+        .updateData(user.toJson());
+    updateClusters();
   }
 
-  static Future<String>getFirebaseUserId() async {
+  static Future<String> getFirebaseUserId() async {
     try {
       final FirebaseUser _anonUser = await _auth.signInAnonymously();
       return _anonUser.uid;
@@ -50,14 +56,30 @@ class UserService {
           age: 0,
           gender: "Unspecified",
           userId: _anonUser.uid,
-          createdAt:  DateTime.now().toUtc(),
+          createdAt: DateTime.now().toUtc(),
         );
-      }      
-      _firestore.collection('/users').document(_anonUser.uid).setData(dbUser.toJson());
+      }
+      _firestore
+          .collection('/users')
+          .document(_anonUser.uid)
+          .setData(dbUser.toJson());
       return true;
-    } catch(ex) {
-      print (ex);
+    } catch (ex) {
+      print(ex);
       return false;
+    }
+  }
+
+  static updateClusters() async {
+    print("*********************CLUSTER USERS********************");
+    var url = Constants.serverUrl + '/updateclusters';
+    try {
+      Response response = await Dio().get(url);
+      if (response.statusCode == 200) {
+        print("Users clustered successfully");
+      }
+    } catch (exception) {
+      print(exception);
     }
   }
 }

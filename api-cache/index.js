@@ -11,6 +11,7 @@ const pgRoute = require('./pgRoute');
 var logFileName = __dirname + '/api-cache.log';
 const saveRating = require('./saveRating');
 const getRecommendation = require('./getRecommendation');
+const updateClusters = require('./updateClusters');
 
 var server = restify.createServer();
 server.use(restify.plugins.bodyParser()); //---Used for post
@@ -26,6 +27,7 @@ server.get('/userLocationLogger', userLocationLogger.logCurrentLocation);
 server.post('/saveRating', saveRating.saveRating);
 
 server.get('/getrecommendation', getRecommendation.httpGetRecommendation);
+server.get('/updateclusters', updateClusters.httpUpdateClusters);
 
 //log to file
 var logFile = fs.createWriteStream(logFileName, { flags: 'a' });

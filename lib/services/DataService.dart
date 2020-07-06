@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:routing/Constants.dart';
 import 'package:routing/models/AllRoutesJSON.dart';
 import 'package:routing/models/LocationJSON.dart';
 import 'package:routing/models/StopsJSON.dart';
+import 'package:routing/services/UserService.dart';
 
 class DataService {
   Future<List<StopsJSON>> fetchData(LatLngBounds bounds) async {
@@ -39,6 +41,8 @@ class DataService {
   }
 
   Future<RoutesWithRecommended> fetchRoutes(LatLng origin, LatLng destination) async {
+    FirebaseUser user = await UserService.currentUser();
+
     String params = "?originlat=" +
         origin.latitude.toString() +
         '&originlon=' +
@@ -46,7 +50,9 @@ class DataService {
         '&destlat=' +
         destination.latitude.toString() +
         '&destlon=' +
-        destination.longitude.toString();
+        destination.longitude.toString()+
+        '&userid=' +
+        user.uid.toString();
 
     //https://missfarukh.com/server_functions/getRoutes.php?originlat=40.76012279512181&originlon=29.922576919198036&destlat=40.824600&destlon=29.919007
     //http://192.168.43.238:9595/getbusroutes?originlat=40.8191533&originlon=29.923916099999985&destlat=40.7656144&destlon=29.925500199999988

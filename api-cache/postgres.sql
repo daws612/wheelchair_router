@@ -253,7 +253,6 @@
 --     OWNER to wheelchair_routing;
 
 
--- TODO ADD USER_IDS
 
 -- CREATE OR REPLACE PROCEDURE izmit.getRecommendedRoutes(
 -- 	originlat double precision,
@@ -312,3 +311,5 @@
 -- 	Raise info 'Rec %', rec;
 -- END
 -- $BODY$ LANGUAGE 'plpgsql';
+
+-- call izmit.getRecommendedRoutes(40.8227515, 29.9283604, 40.8243215, 29.9185689, 100, 2.3, '83', null);

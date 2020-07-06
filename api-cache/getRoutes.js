@@ -16,12 +16,11 @@ async function performRouting(req, res, next) {
         var destlon = +params.destlon;
         var originHttp = originlat + "," + originlon;
         var destinationHttp = destlat + "," + destlon;
-
-        var firebaseId = params.id;
+        var firebaseId = params.userid;
 
         var walkingDirections = await commons.getSidewalkOrWalkingDirections(originlat, originlon, destlat, destlon, firebaseId); //await getWalkingRoutes(originHttp, destinationHttp);
         var busRoutes = await getBusRoutes(originlat, originlon, destlat, destlon, originHttp, destinationHttp, firebaseId);
-        var recommendations = await getRecommendation.getRecommendation(originlat, originlon, destlat, destlon);
+        var recommendations = await getRecommendation.getRecommendation(originlat, originlon, destlat, destlon, firebaseId);
 
         //remove duplicate routes that are already in recommendation
         if (recommendations.length > 0) {
