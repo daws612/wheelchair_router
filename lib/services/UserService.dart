@@ -31,8 +31,7 @@ class UserService {
     _firestore
         .collection('/users')
         .document(user.userId)
-        .updateData(user.toJson());
-    updateClusters();
+        .updateData(user.toJson()).then((value) => updateClusters());
   }
 
   static Future<String> getFirebaseUserId() async {
