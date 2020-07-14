@@ -36,7 +36,7 @@ async function logCurrentLocation(req, res, next) {
 
         commons.pgPool.query(initSql);
 
-        var insertSQL = `INSERT INTO user_location_history (user_id, current_location, origin, destination) VALUES (` +
+        var insertSQL = `INSERT INTO izmit.user_location_history (user_id, current_location, origin, destination) VALUES (` +
             `'${userId}', ` +
             `'${currentLocation}', ` +
             `'${origin}', ` +
