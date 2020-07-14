@@ -51,6 +51,7 @@ def visualize_clusters(standardized_data):
     plt.close(clusterPlot)
 
 try:
+    print("Python on duty!")
     postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="wheelchair_routing",
                                                          password="em6Wgu<S;^J*xP?g%.",
                                                          host="127.0.0.1",

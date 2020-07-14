@@ -22,11 +22,10 @@ async function logCurrentLocation(req, res, next) {
         var initSql = `CREATE TABLE IF NOT EXISTS izmit.user_location_history
                         (
                         id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
-                        user_id bigint,
+                        user_id character varying(255),
                         current_location  character varying(255),
-                        origin double precision NOT NULL,
-                        destination double precision NOT NULL,
-                        polyline_json json NOT NULL,
+                        origin character varying(255) NOT NULL,
+                        destination character varying(255) NOT NULL,
                         CONSTRAINT user_location_history_pkey PRIMARY KEY (id)
                         )
                         WITH (

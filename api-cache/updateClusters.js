@@ -27,7 +27,7 @@ async function updateClusters() {
                 py = spawn('python', [require.resolve("../collab/cluster_registered.py")]);
 
             py.stdout.on('data', function (data) {
-                //console.log(data.toString());
+                //console.log("update cluster --- " + data.toString());
                 result = data.toString();
             });
             py.stdout.on('end', async function () {
