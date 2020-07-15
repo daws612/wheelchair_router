@@ -11,7 +11,7 @@ from sklearn_pandas import DataFrameMapper
 from matplotlib import pyplot as plt
 
 def getNumberofClusters(elbowValues):
-    optimalK = 0
+    optimalK = 1
     maxDiff = 0
 
     sseValues = elbowValues['SSE']
