@@ -108,9 +108,6 @@ try:
 
 
     dirname = os.path.dirname(__file__)
-    
-    # We need to know how many clusters to make.
-    N_CLUSTERS = 2
 
     # We need to know which features are categorical.
     CATEGORICAL_FEATURES = ['gender', 'wheelchair_type']
@@ -151,6 +148,11 @@ try:
     standardized_data[cols_to_standardize] = standardized_columns
     joblib.dump(scaler, os.path.join(dirname, 'Scaler.pkl'))
 
+    
+    # We need to know how many clusters to make.
+    N_CLUSTERS = 2
+    elbow(standardized_data)
+    
     model = KMeans(
         n_clusters=N_CLUSTERS, init='k-means++',
         n_init=10, max_iter=300
@@ -166,7 +168,6 @@ try:
     joblib.dump(model, os.path.join(dirname, 'KmeansModel.pkl'))
     joblib.dump(standardized_data, os.path.join(dirname, 'standardized_data.pkl'))
 
-    elbow(standardized_data)
     visualize_clusters(standardized_data)
 
 except (Exception, psycopg2.DatabaseError) as error:
