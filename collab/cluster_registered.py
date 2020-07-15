@@ -10,13 +10,47 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn_pandas import DataFrameMapper
 from matplotlib import pyplot as plt
 
+def getNumberofClusters(elbowValues):
+    optimalK = 0
+    maxDiff = 0
+
+    sseValues = elbowValues['SSE']
+    diffBefore = [0] * len(elbowValues.index)
+    diffAfter = [0] * len(elbowValues.index)
+    finalDiff = [0] * len(elbowValues.index)
+    
+    for index, row in elbowValues.iterrows():
+        if(index == 0):
+            diffBefore[index] = 0
+        else:
+            diffBefore[index] = elbowValues['SSE'][index-1] - elbowValues['SSE'][index]
+
+    for index, row in elbowValues.iterrows():
+        if(index == len(elbowValues.index)-1):
+            diffAfter[index] = elbowValues['SSE'][index]
+        else:
+            diffAfter[index] = elbowValues['SSE'][index] - elbowValues['SSE'][index+1]
+    
+    for i in range(len(finalDiff)):
+        finalDiff[i] = diffBefore[i] - diffAfter[i]
+        if(finalDiff[i] > maxDiff):
+            maxDiff = finalDiff[i]
+            optimalK = elbowValues['K'][i]
+    
+    print('DiffBefore : ', diffBefore)
+    print('DiffAfter : ', diffAfter)
+    print('FinalDiff : ', finalDiff)
+
+    print("Found Optimal K: " + str(optimalK))
+    return optimalK
+
 def elbow(standardized_data):
     #ELBOW METHOD
     # calculate distortion for a range of number of cluster
     maxK = 10
     if(len(standardized_data.index) < maxK):
         maxK = len(standardized_data.index) 
-    distortions = []
+    sse = []
     k = range(1, maxK+1)
     for i in k:
         km = KMeans(
@@ -24,13 +58,13 @@ def elbow(standardized_data):
             n_init=10, max_iter=300
         )
         km.fit(standardized_data)
-        distortions.append(km.inertia_)
+        sse.append(km.inertia_)
 
     # plot
     elbowPlot = plt.figure(1);
-    plt.plot(k, distortions, marker='o')
-    plt.xlabel('Number of clusters')
-    plt.ylabel('Distortion')
+    plt.plot(k, sse, marker='o')
+    plt.xlabel('Number of clusters, K')
+    plt.ylabel('SSE')
 
     #plt.show()
     dirname = os.path.dirname(__file__)
@@ -39,17 +73,19 @@ def elbow(standardized_data):
 
     # get the list of tuples from two lists.  
     # and merge them by using zip().  
-    list_of_tuples = list(zip(k, distortions))
+    list_of_tuples = list(zip(k, sse))
     # Converting lists of tuples into  
     # pandas Dataframe.  
-    df = pd.DataFrame(list_of_tuples, columns = ['k', 'Distortions'])  
+    df = pd.DataFrame(list_of_tuples, columns = ['K', 'SSE'])  
         
     # Print data. 
     print("Elbow values") 
     print(df)  
+    return getNumberofClusters(df)
 
-def visualize_clusters(standardized_data):
+def visualize_clusters():
     dirname = os.path.dirname(__file__)
+    standardized_data = joblib.load(os.path.join(dirname, 'TrainData.pkl'))
 
     clusterPlot = plt.figure(2, figsize=(6, 6))
     plt.scatter(standardized_data.iloc[:, 3], standardized_data.iloc[:, 0], c=cluster, s=10, cmap='viridis')
@@ -84,7 +120,7 @@ try:
         print("successfully received connection from connection pool ")
         ps_cursor = ps_connection.cursor()
         ps_cursor.execute(
-            "select user_id, COALESCE(gender, 'Unspecified') as gender, age, COALESCE(wheelchair_type, 'Unknown') as wheelchair_type from izmit.users")
+            "select user_id, COALESCE(gender, 'Unspecified') as gender, age, COALESCE(wheelchair_type, 'Unknown') as wheelchair_type from izmit.users where age>0")
         raw_data = DataFrame(ps_cursor.fetchall())
         if(raw_data.size < 1):
             exit()
@@ -150,15 +186,17 @@ try:
 
     
     # We need to know how many clusters to make.
-    N_CLUSTERS = 2
-    elbow(standardized_data)
-    
+    N_CLUSTERS = elbow(standardized_data)
+    print("Cluster with k=" + str(N_CLUSTERS))
+
     model = KMeans(
         n_clusters=N_CLUSTERS, init='k-means++',
         n_init=10, max_iter=300
     ).fit(standardized_data)
 
     cluster = model.predict(standardized_data)
+    joblib.dump(standardized_data, os.path.join(dirname, 'TrainData.pkl'))
+
     standardized_data['user_id'] = raw_data.user_id.values
     standardized_data['cluster_id'] = model.labels_
 
@@ -168,7 +206,7 @@ try:
     joblib.dump(model, os.path.join(dirname, 'KmeansModel.pkl'))
     joblib.dump(standardized_data, os.path.join(dirname, 'standardized_data.pkl'))
 
-    visualize_clusters(standardized_data)
+    visualize_clusters()
 
 except (Exception, psycopg2.DatabaseError) as error:
     print("Error while connecting to PostgreSQL", error)

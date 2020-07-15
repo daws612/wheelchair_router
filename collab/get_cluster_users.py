@@ -96,6 +96,7 @@ def main():
         test_standardized_data['cluster_id'] = test_prediction
 
         standardized_data = joblib.load(os.path.join(dirname, 'standardized_data.pkl'))
+        
         test_group = standardized_data.query('cluster_id == ' + str(test_prediction))
         cluster_userids = test_group["user_id"].values.tolist()
         
