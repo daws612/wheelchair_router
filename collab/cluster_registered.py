@@ -2,7 +2,7 @@ import joblib
 import os
 import numpy as np
 import pandas as pd
-import psycopg2
+import psycopg2, sklearn
 from pandas import DataFrame
 from psycopg2 import pool
 from sklearn.cluster import KMeans
@@ -13,9 +13,12 @@ from matplotlib import pyplot as plt
 def elbow(standardized_data):
     #ELBOW METHOD
     # calculate distortion for a range of number of cluster
-    elbowPlot = plt.figure(1);
+    maxK = 10
+    if(len(standardized_data.index) < maxK):
+        maxK = len(standardized_data.index) 
     distortions = []
-    for i in range(1, 10):
+    k = range(1, maxK+1)
+    for i in k:
         km = KMeans(
             n_clusters=i, init='k-means++',
             n_init=10, max_iter=300
@@ -24,7 +27,8 @@ def elbow(standardized_data):
         distortions.append(km.inertia_)
 
     # plot
-    plt.plot(range(1, 10), distortions, marker='o')
+    elbowPlot = plt.figure(1);
+    plt.plot(k, distortions, marker='o')
     plt.xlabel('Number of clusters')
     plt.ylabel('Distortion')
 
@@ -32,6 +36,17 @@ def elbow(standardized_data):
     dirname = os.path.dirname(__file__)
     elbowPlot.savefig(os.path.join(dirname, 'elbow.png'))
     plt.close(elbowPlot)
+
+    # get the list of tuples from two lists.  
+    # and merge them by using zip().  
+    list_of_tuples = list(zip(k, distortions))
+    # Converting lists of tuples into  
+    # pandas Dataframe.  
+    df = pd.DataFrame(list_of_tuples, columns = ['k', 'Distortions'])  
+        
+    # Print data. 
+    print("Elbow values") 
+    print(df)  
 
 def visualize_clusters(standardized_data):
     dirname = os.path.dirname(__file__)
@@ -52,6 +67,8 @@ def visualize_clusters(standardized_data):
 
 try:
     print("Python on duty!")
+
+    print('The scikit-learn version is {}.'.format(sklearn.__version__))
     postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="wheelchair_routing",
                                                          password="em6Wgu<S;^J*xP?g%.",
                                                          host="127.0.0.1",
