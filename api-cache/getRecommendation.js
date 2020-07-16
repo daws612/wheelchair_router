@@ -32,7 +32,7 @@ async function getRecommendation(originlat, originlon, destlat, destlon, firebas
             var result = { busRoutes: [], walkingDirections: [] };
 
             var spawn = require('child_process').spawn,
-                py = spawn('python', [require.resolve("../collab/get_cluster_users.py")]),
+                py = spawn(config.python.path + 'python', [require.resolve("../collab/get_cluster_users.py")]),
                 userid = (!firebaseId) ? '' : firebaseId,
                 cluster_userids = '';
 

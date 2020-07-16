@@ -37,20 +37,20 @@ async function getWalkingDirections(originHttp, destinationHttp, allOptions, fir
 
         if (allOptions) {
             for (var poly = 0; poly < polyline.routes.length; poly++) {
-                var dirs = await getElevation(originHttp, destinationHttp, polyline.routes[poly], firebaseId);
+                var dirs = await getElevation(originHttp, destinationHttp, polyline.routes[poly], firebaseId, poly);
                 result = result.concat(dirs);
             }
         } else {
-            var dirs = await getElevation(originHttp, destinationHttp, polyline.routes[0], firebaseId);
+            var dirs = await getElevation(originHttp, destinationHttp, polyline.routes[0], firebaseId, 0);
             result = result.concat(dirs);
         }
         resolve(result);
     });
 }
 
-async function getElevation(originHttp, destinationHttp, route, firebaseId) {
+async function getElevation(originHttp, destinationHttp, route, firebaseId, index) {
     return new Promise(async (resolve, reject) => {
-        var result = await commons.fetchRouteSegmentsFromDB(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk", firebaseId);
+        var result = await commons.fetchRouteSegmentsFromDB(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk"+index, firebaseId);
 
         if (result.length > 0) {
             resolve(result);
@@ -78,7 +78,7 @@ async function getElevation(originHttp, destinationHttp, route, firebaseId) {
 
             //decode the polyline to get the points on the route
             var path = decode(polyline);
-            var routeid = await commons.saveRouteInfo(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk", null);
+            var routeid = await commons.saveRouteInfo(originHttp.split(',')[0], originHttp.split(',')[1], destinationHttp.split(',')[0], destinationHttp.split(',')[1], "walk"+index, null);
 
             //get elevation between each 2 consecutive points on a path
             var pathData = [];

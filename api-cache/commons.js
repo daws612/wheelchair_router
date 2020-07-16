@@ -142,7 +142,7 @@ async function getSidewalkOrWalkingDirections(originlat, originlon, destlat, des
     var sidewalkDirs = await pgRoute.getSidewalkDirections(originlat, originlon, destlat, destlon, firebaseId);
     if (sidewalkDirs === 'undefined' || sidewalkDirs.length == 0) {
         console.log("No sidewalk route found.");
-        var walkingDirections = await getElevation.getWalkingDirections(originHttp, destinationHttp, false, firebaseId);
+        var walkingDirections = await getElevation.getWalkingDirections(originHttp, destinationHttp, true, firebaseId);
         if (walkingDirections === 'undefined' || walkingDirections.length == 0)
             console.log("No walking directions found");
         else

@@ -9,6 +9,8 @@ async function performRouting(req, res, next) {
 
     try {
 
+        console.log('*************************************************************************');
+        console.log('\nstart routing request');
         var params = req.query;
         var originlat = +params.originlat;
         var originlon = +params.originlon;
@@ -38,6 +40,8 @@ async function performRouting(req, res, next) {
         response.busRoutes = busRoutes;
         response.recommendations = recommendations;
 
+        console.log('\nSuccessfully complete routing request');
+        console.log('*************************************************************************');
         res.send(response);
     } catch (ex) {
         console.error('Unexpected exception occurred when trying to get directions \n' + ex);
@@ -93,8 +97,7 @@ async function getBusRoutes(originlat, originlon, destlat, destlon, firebaseId) 
                 break;
         }
 
-        console.log('\nSuccessfully complete routing request');
-        console.log('*************************************************************************');
+        console.log('\nSuccessfully complete bus routing request');
         return result;
 
     } catch (ex) {

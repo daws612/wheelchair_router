@@ -24,7 +24,7 @@ async function updateClusters() {
         try {
 
             var spawn = require('child_process').spawn,
-                py = spawn('python', [require.resolve("../collab/cluster_registered.py")]);
+                py = spawn(config.python.path + 'python', [require.resolve("../collab/cluster_registered.py")]);
 
             py.stdout.on('data', function (data) {
                 //console.log("update cluster --- " + data.toString());
