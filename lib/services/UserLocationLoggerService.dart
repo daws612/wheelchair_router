@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:routing/Constants.dart';
 import 'package:routing/services/UserService.dart';
 
 class UserLocationLoggerService {
@@ -16,7 +17,7 @@ class UserLocationLoggerService {
               origin +
               '&destination=' +
               destination;
-            var url = 'https://api.jaywjay.com/wheelchair/userLocationLogger$params';
+            var url = Constants.serverUrl +'/userLocationLogger$params';
             print("Saving user location - " + url);
              try {
               Dio().get(url);            

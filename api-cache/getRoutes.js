@@ -25,7 +25,7 @@ async function performRouting(req, res, next) {
         var recommendations = await getRecommendation.getRecommendation(originlat, originlon, destlat, destlon, firebaseId);
 
         //remove duplicate routes that are already in recommendation
-        if (recommendations.length > 0) {
+        if (recommendations && (recommendations.busRoutes.length > 0 || recommendations.walkingDirections.length > 0)) {
             if (recommendations.busRoutes.length > 0) {
                 const recommendedRouteIds = [...new Set(recommendations.busRoutes.map(route => route.route_id))];
                 busRoutes = busRoutes.filter(route => !recommendedRouteIds.includes(route.route_id));
