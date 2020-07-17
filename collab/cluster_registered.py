@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn_pandas import DataFrameMapper
 from matplotlib import pyplot as plt
+from sklearn.metrics import silhouette_score
 
 def getNumberofClusters(elbowValues):
     optimalK = 1
@@ -81,7 +82,28 @@ def elbow(standardized_data):
     # Print data. 
     print("Elbow values") 
     print(df)  
-    return getNumberofClusters(df)
+
+def getOptimalKSilhoutteCoeff(standardized_data):
+    maxScore = -1
+    optimalK = 1
+    maxK = 10
+    if(len(standardized_data.index) < maxK):
+        maxK = len(standardized_data.index) 
+    sse = []
+    k = range(2, maxK)
+    for i in k:
+        km = KMeans(
+            n_clusters=i, init='k-means++',
+            n_init=10, max_iter=300
+        )
+        labels = km.fit_predict(standardized_data)
+        silhouette_avg = silhouette_score(standardized_data, labels)
+        print("For n_clusters =", i,
+            "The average silhouette_score is :", silhouette_avg)
+        if(silhouette_avg > maxScore):
+            maxScore = silhouette_avg
+            optimalK = i
+    return optimalK
 
 def visualize_clusters():
     dirname = os.path.dirname(__file__)
@@ -107,7 +129,7 @@ try:
     print('The scikit-learn version is {}.'.format(sklearn.__version__))
     postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="wheelchair_routing",
                                                          password="em6Wgu<S;^J*xP?g%.",
-                                                         host="127.0.0.1",
+                                                         host="localhost",
                                                          port="5432",
                                                          database="wheelchair_routing")
     if(postgreSQL_pool):
@@ -186,7 +208,7 @@ try:
 
     
     # We need to know how many clusters to make.
-    N_CLUSTERS = elbow(standardized_data)
+    N_CLUSTERS = getOptimalKSilhoutteCoeff(standardized_data)
     print("Cluster with k=" + str(N_CLUSTERS))
 
     model = KMeans(

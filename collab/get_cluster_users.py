@@ -20,7 +20,7 @@ def main():
     try:
         postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20,user = "wheelchair_routing",
                                                 password = "em6Wgu<S;^J*xP?g%.",
-                                                host = "127.0.0.1",
+                                                host = "localhost",
                                                 port = "5432",
                                                 database = "wheelchair_routing")
         #if(postgreSQL_pool):
