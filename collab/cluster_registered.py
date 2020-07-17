@@ -142,7 +142,7 @@ try:
         print("successfully received connection from connection pool ")
         ps_cursor = ps_connection.cursor()
         ps_cursor.execute(
-            "select user_id, COALESCE(gender, 'Unspecified') as gender, age, COALESCE(wheelchair_type, 'Unknown') as wheelchair_type from izmit.users")
+            "select user_id, COALESCE(gender, 'Unspecified') as gender, age, COALESCE(wheelchair_type, 'Unknown') as wheelchair_type from izmit.users where is_deleted = false")
         raw_data = DataFrame(ps_cursor.fetchall())
         if(raw_data.size < 1):
             exit()
