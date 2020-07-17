@@ -240,8 +240,8 @@ async function fetchDBRoutes(originlat, originlon, destlat, destlon, i, j, neare
             //get routing rate
             var route = "SELECT r.route_id,  coalesce(round(avg(rating),2),0) as rating FROM izmit.routes r " +
                 " LEFT JOIN izmit.route_ratings rr ON r.route_id = rr.route_id " +
-                " WHERE rr.orig_lon = $1 AND rr.orig_lat = $2 " +
-                " AND rr.dest_lon = $3 AND rr.dest_lat = $4 AND route_name=$5 GROUP BY r.route_id;"
+                " WHERE r.orig_lon = $1 AND r.orig_lat = $2 " +
+                " AND r.dest_lon = $3 AND r.dest_lat = $4 AND r.route_name=$5 GROUP BY r.route_id;"
             var routeid = await commons.pgPool.query(route, [origin.stop_lon, origin.stop_lat, destination.stop_lon, destination.stop_lat, "bus-" + routes[k].route_short_name]);
 
             var rating = 0;
