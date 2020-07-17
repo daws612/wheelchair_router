@@ -99,6 +99,7 @@ def main():
         
         test_group = standardized_data.query('cluster_id == ' + str(test_prediction))
         cluster_userids = test_group["user_id"].values.tolist()
+        cluster_userids = cluster_userids + test_data['user_id'].values.tolist()
         
         print(','.join([str(x) for x in cluster_userids]))
 
