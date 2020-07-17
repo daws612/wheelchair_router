@@ -1,6 +1,5 @@
 const util = require('util');
 const config = require('./config');
-const mysql = require('mysql');
 var restify_clients = require('restify-clients');
 const getElevation = require('./getElevation');
 const pgRoute = require('./pgRoute');
@@ -13,34 +12,6 @@ const pgPool = new PGPool({
     password: config.schema.password,
     port: 5432,
 });
-
-// var pool = mysql.createPool({
-//     connectionLimit: 100,
-//     host: config.schema.host,
-//     user: config.schema.user,
-//     password: config.schema.password,
-//     database: config.schema.db
-// });
-
-
-// Ping database to check for common exception errors.
-// pgPool.getConnection((err, connection) => {
-//     if (err) {
-//         if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-//             console.error('Database connection was closed.')
-//         }
-//         if (err.code === 'ER_CON_COUNT_ERROR') {
-//             console.error('Database has too many connections.')
-//         }
-//         if (err.code === 'ECONNREFUSED') {
-//             console.error('Database connection was refused.')
-//         }
-//     }
-
-//     if (connection) connection.release()
-
-//     return
-// });
 
 // Promisify for Node.js async/await.
 pgPool.query = util.promisify(pgPool.query);
