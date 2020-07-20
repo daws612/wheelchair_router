@@ -5,13 +5,66 @@ from sklearn.cluster import KMeans
 import matplotlib.cm as cm
 import numpy as np
 
+
+def silhouttePlot(X_std):
+    for k in range(2, len(X_std.index)-1) :
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        #fig.set_size_inches(18, 7)
+        
+        # Run the Kmeans algorithm
+        km = KMeans(n_clusters=k)
+        labels = km.fit_predict(X_std)
+        centroids = km.cluster_centers_
+
+        # Get silhouette samples
+        silhouette_vals = silhouette_samples(X_std, labels)
+
+        # Silhouette plot
+        y_ticks = []
+        y_lower, y_upper = 0, 0
+        for i, cluster in enumerate(np.unique(labels)):
+            cluster_silhouette_vals = silhouette_vals[labels == cluster]
+            cluster_silhouette_vals.sort()
+            y_upper += len(cluster_silhouette_vals)
+            ax1.barh(range(y_lower, y_upper), cluster_silhouette_vals, edgecolor='none', height=1)
+            ax1.text(-0.03, (y_lower + y_upper) / 2, str(i + 1))
+            y_lower += len(cluster_silhouette_vals)
+
+        # Get the average silhouette score and plot it
+        avg_score = np.mean(silhouette_vals)
+        ax1.axvline(avg_score, linestyle='--', linewidth=2, color='green')
+        ax1.set_yticks([])
+        # ax1.set_xlim([-0.1, 1])
+        ax1.set_xlabel('Silhouette coefficient values ')
+        ax1.set_ylabel(f'Cluster labels k = {k}')
+        ax1.set_title(f'Silhouette plot for k = {k}', y=1.02);
+        
+        # Scatter plot of data colored with labels
+        ax2.scatter(X_std.iloc[:, 3], X_std.iloc[:, 6], c=labels)
+        ax2.scatter(centroids[:, 3], centroids[:, 6], marker='*', c='r', s=50)
+        # ax2.set_xlim([-2, 2])
+        # ax2.set_xlim([-2, 2])
+        ax2.set_xlabel('Wh-Electric')
+        ax2.set_ylabel('Age')
+        ax2.set_title('Visualization of clustered data', y=1.02)
+        ax2.set_aspect('equal')
+        plt.tight_layout()
+        plt.suptitle(f'Silhouette analysis using k = {k}',
+                    fontsize=16, fontweight='semibold', y=1.05);
+
+
 def main():
     dirname = os.path.dirname(__file__)
+    clusterData = joblib.load(os.path.join(dirname, 'standardized_data.pkl'))
+    print(clusterData)
     loaded_model = joblib.load(os.path.join(dirname, 'KmeansModel.pkl'))
     standardized_data = joblib.load(os.path.join(dirname, 'TrainData.pkl'))
+    print(standardized_data)
 
     score = silhouette_score(standardized_data, loaded_model.labels_, metric='euclidean')
     print(score)
+    silhouttePlot(standardized_data)
+    plt.show()
 
     # maxK = 10
     # if(len(standardized_data.index) < maxK):

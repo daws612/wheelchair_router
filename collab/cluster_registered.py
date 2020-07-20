@@ -10,6 +10,7 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn_pandas import DataFrameMapper
 from matplotlib import pyplot as plt
 from sklearn.metrics import silhouette_score
+import seaborn as sns
 
 def getNumberofClusters(elbowValues):
     optimalK = 1
@@ -52,7 +53,7 @@ def elbow(standardized_data):
     if(len(standardized_data.index) < maxK):
         maxK = len(standardized_data.index) 
     sse = []
-    k = range(1, maxK+1)
+    k = range(1, len(standardized_data.index) - 1)
     for i in k:
         km = KMeans(
             n_clusters=i, init='k-means++',
@@ -87,8 +88,8 @@ def getOptimalKSilhoutteCoeff(standardized_data):
     maxScore = -1
     optimalK = 1
     maxK = 10
-    if(len(standardized_data.index) < maxK):
-        maxK = len(standardized_data.index) 
+    #if(len(standardized_data.index) < maxK):
+    maxK = len(standardized_data.index) 
     sse = []
     k = range(2, maxK)
     for i in k:
@@ -107,21 +108,62 @@ def getOptimalKSilhoutteCoeff(standardized_data):
 
 def visualize_clusters():
     dirname = os.path.dirname(__file__)
-    standardized_data = joblib.load(os.path.join(dirname, 'TrainData.pkl'))
+    train_data = joblib.load(os.path.join(dirname, 'TrainData.pkl'))
 
     clusterPlot = plt.figure(2, figsize=(6, 6))
-    plt.scatter(standardized_data.iloc[:, 3], standardized_data.iloc[:, 0], c=cluster, s=10, cmap='viridis')
+    plt.scatter(train_data.iloc[:, 6], train_data.iloc[:, 0], c=cluster, s=10, cmap='viridis')
 
     loaded_model = joblib.load(os.path.join(dirname, 'KmeansModel.pkl'))
     centers = loaded_model.cluster_centers_
-    plt.scatter(centers[:, 3], centers[:, 0], c='grey', s=200, alpha=0.1);
+    cluster_ids = np.unique(model.labels_)
+    plt.scatter(centers[:, 6], centers[:, 0], c='grey', s=200, alpha=0.1);
 
-    plt.xlabel(standardized_data.columns[3])
-    plt.ylabel(standardized_data.columns[0])
+    plt.xlabel(train_data.columns[6])
+    plt.ylabel(train_data.columns[0])
     #plt.show()
     
     clusterPlot.savefig(os.path.join(dirname, 'cluster.png'))
     plt.close(clusterPlot)
+
+    sns.set_style('whitegrid')
+    wh_gender = sns.countplot(x='wheelchair_type', hue='gender', data=raw_data, palette='husl')
+    wh_age = sns.catplot(x='wheelchair_type', y='age', data=raw_data, palette='husl')
+    gender_age = sns.catplot(x='gender', y='age', data=raw_data, palette='husl')
+    clustered_gender_age = sns.catplot(x='gender', y='raw_age', hue='cluster_id', data=standardized_data, palette='husl')
+    clustered_wh_age = sns.catplot(x='wheelchair_type', y='raw_age', hue='cluster_id', data=standardized_data, palette='husl')
+
+    plt.subplots(1,1)
+    clustered_gender = sns.countplot(x='cluster_id', hue='gender', data=standardized_data, palette='husl')
+    plt.subplots(1,1)
+    clustered_wh = sns.countplot(x='cluster_id', hue='wheelchair_type', data=standardized_data, palette='husl')
+    
+    plt.subplots(1,1)
+    clustered_full = sns.scatterplot(x='cluster_id', y='age', style='gender', hue='wheelchair_type', data=standardized_data, palette='Set2')
+    plt.scatter( cluster_ids, centers[:, 6], c='grey', s=200, alpha=0.2);
+    plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
+    plt.tight_layout()
+    # plt.subplots(1,1)
+    # sns.scatterplot(x='wheelchair_type', y='raw_age', style='gender', hue='cluster_id', data=standardized_data, palette='Set2', legend=False)
+
+    wh_gender.figure.savefig(os.path.join(dirname, 'wh_gender.png'))
+    # plt.close(wh_gender.figure)
+    wh_age.savefig(os.path.join(dirname, 'wh_age.png'))
+    #plt.close(wh_age.figure)
+    gender_age.savefig(os.path.join(dirname, 'gender_age.png'))
+    # plt.close(gender_age.figure)
+
+    clustered_gender_age.savefig(os.path.join(dirname, 'clustered_gender_age.png'))
+    # plt.close(clustered_gender_age.figure)
+    clustered_wh_age.savefig(os.path.join(dirname, 'clustered_wh_age.png'))
+    # plt.close(clustered_wh_age.figure)
+
+    clustered_wh.figure.savefig(os.path.join(dirname, 'clustered_wh.png'))
+    # plt.close(clustered_wh.figure)
+    clustered_gender.figure.savefig(os.path.join(dirname, 'clustered_gender.png'))
+    # plt.close(clustered_gender.figure)
+    clustered_full.figure.savefig(os.path.join(dirname, 'clustered_full.png'))
+    # plt.close(clustered_full.figure)
+    #plt.show()
 
 try:
     print("Python on duty!")
@@ -129,7 +171,7 @@ try:
     print('The scikit-learn version is {}.'.format(sklearn.__version__))
     postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="wheelchair_routing",
                                                          password="em6Wgu<S;^J*xP?g%.",
-                                                         host="localhost",
+                                                         host="api.jaywjay.com",
                                                          port="5432",
                                                          database="wheelchair_routing")
     if(postgreSQL_pool):
@@ -142,7 +184,7 @@ try:
         print("successfully received connection from connection pool ")
         ps_cursor = ps_connection.cursor()
         ps_cursor.execute(
-            "select user_id, COALESCE(gender, 'Unspecified') as gender, age, COALESCE(wheelchair_type, 'Unknown') as wheelchair_type from izmit.users where is_deleted = false")
+            "select user_id, COALESCE(gender, 'Unspecified') as gender, age, COALESCE(wheelchair_type, 'Unspecified') as wheelchair_type from izmit.users where is_deleted = false")
         raw_data = DataFrame(ps_cursor.fetchall())
         if(raw_data.size < 1):
             exit()
@@ -172,7 +214,7 @@ try:
 
     # create a dataframe with all columns to use later for standardizing the data
     column_names_all = ['gender_Female', 'gender_Male', 'gender_Unspecified',
-                        'wheelchair_type_Electric',  'wheelchair_type_Manual', 'wheelchair_type_Unknown']
+                        'wheelchair_type_Electric',  'wheelchair_type_Manual', 'wheelchair_type_Unspecified']
     df = pd.DataFrame(columns=column_names_all)
 
     # OnehotEncoder will transform categorical features into binary/numerical?
@@ -209,6 +251,7 @@ try:
     
     # We need to know how many clusters to make.
     N_CLUSTERS = getOptimalKSilhoutteCoeff(standardized_data)
+    elbow(standardized_data)
     print("Cluster with k=" + str(N_CLUSTERS))
 
     model = KMeans(
@@ -219,6 +262,9 @@ try:
     cluster = model.predict(standardized_data)
     joblib.dump(standardized_data, os.path.join(dirname, 'TrainData.pkl'))
 
+    standardized_data['raw_age'] = raw_data.age.values
+    standardized_data['gender'] = raw_data.gender.values
+    standardized_data['wheelchair_type'] = raw_data.wheelchair_type.values
     standardized_data['user_id'] = raw_data.user_id.values
     standardized_data['cluster_id'] = model.labels_
 
