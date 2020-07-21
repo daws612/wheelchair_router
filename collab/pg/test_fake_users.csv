@@ -1,6 +1,6 @@
 user_id,age,gender,wheelchair_type
-1,61,Male,Electric
-2,40,Female,Electric
-3,50,Female,Manual
-4,66,Female,Manual
-5,35,Male,Manual
+1,25,Male,Unspecified
+2,32,Female,Unspecified
+3,0,Unspecified,Unspecified
+4,40,Female,Electric
+5,63,Male,Manual

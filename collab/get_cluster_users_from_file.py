@@ -73,7 +73,7 @@ def main():
         loaded_model = joblib.load(os.path.join(dirname, 'KmeansModel.pkl'))
         test_prediction = loaded_model.predict(test_standardized_data)
 
-        test_standardized_data['age'] = test_data.age.values
+        test_standardized_data['raw_age'] = test_data.age.values
         test_standardized_data['gender'] = test_data.gender.values
         test_standardized_data['wheelchair_type'] = test_data.wheelchair_type.values
         test_standardized_data['user_id'] = test_data.user_id.values
@@ -81,8 +81,8 @@ def main():
 
         standardized_data = joblib.load(os.path.join(dirname, 'standardized_data.pkl'))
         plt.subplots(1,1)
-        sns.scatterplot(x='cluster_id', y='age', style='gender', hue='wheelchair_type', data=standardized_data, palette=sns.color_palette("Set2", 3))
-        sns.scatterplot(x='cluster_id', y='age', style='gender', hue='wheelchair_type', data=test_standardized_data, palette=sns.color_palette("Set1", 2), s=70)
+        sns.scatterplot(x='cluster_id', y='raw_age', style='gender', hue='wheelchair_type', data=standardized_data, palette=sns.color_palette("Set2", len(standardized_data.wheelchair_type.unique())))
+        sns.scatterplot(x='cluster_id', y='raw_age', style='gender', hue='wheelchair_type', data=test_standardized_data, palette=sns.color_palette("Set1", len(test_standardized_data.wheelchair_type.unique())), s=70)
         plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
         plt.tight_layout()
 

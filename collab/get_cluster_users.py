@@ -9,6 +9,8 @@ from sklearn_pandas import DataFrameMapper
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.cluster import KMeans
+import seaborn as sns
+from matplotlib import pyplot as plt
 
 #Read data from stdin
 def read_in():
@@ -92,6 +94,9 @@ def main():
         loaded_model = joblib.load(os.path.join(dirname, 'KmeansModel.pkl'))
         test_prediction = loaded_model.predict(test_standardized_data)
 
+        test_standardized_data['raw_age'] = test_data.age.values
+        test_standardized_data['gender'] = test_data.gender.values
+        test_standardized_data['wheelchair_type'] = test_data.wheelchair_type.values
         test_standardized_data['user_id'] = test_data.user_id.values
         test_standardized_data['cluster_id'] = test_prediction
 
@@ -101,6 +106,13 @@ def main():
         cluster_userids = test_group["user_id"].values.tolist()
         cluster_userids = cluster_userids + test_data['user_id'].values.tolist()
         
+        plt.subplots(1,1)
+        clustered_test_user = sns.scatterplot(x='cluster_id', y='raw_age', style='gender', hue='wheelchair_type', data=standardized_data, palette=sns.color_palette("Set2", len(standardized_data.wheelchair_type.unique())))
+        plt.scatter(test_standardized_data.cluster_id, test_standardized_data.raw_age, c='grey', s=100, alpha=0.2)
+        plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
+        plt.tight_layout()
+        clustered_test_user.figure.savefig(os.path.join(dirname, 'clustered_test_user.png'))
+
         print(','.join([str(x) for x in cluster_userids]))
 
     except (Exception, psycopg2.DatabaseError) as error :

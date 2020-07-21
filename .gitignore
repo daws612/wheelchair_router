@@ -87,4 +87,4 @@ cloud_functions/functions/config.js
 .flutter-plugins-dependencies
 collab/*.pkl
 collab/*.png
-collab/pg/*.*
+collab/pg/*

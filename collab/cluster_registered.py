@@ -211,8 +211,13 @@ try:
     if(raw_data.size < 1):
         exit()
 
-
     dirname = os.path.dirname(__file__)
+    standardized_data = joblib.load(os.path.join(dirname, 'standardized_data.pkl'))
+    #Continue with clustering only after 5 new users have registered
+    newUsers = len(raw_data.index) - len(standardized_data.index)
+    if(newUsers < 5):
+        print("Number of users left until next clustering: " + str(5 - newUsers))
+        exit()
 
     # We need to know which features are categorical.
     CATEGORICAL_FEATURES = ['gender', 'wheelchair_type']
