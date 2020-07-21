@@ -16,12 +16,11 @@ def getNumberofClusters(elbowValues):
     optimalK = 1
     maxDiff = 0
 
-    sseValues = elbowValues['SSE']
     diffBefore = [0] * len(elbowValues.index)
     diffAfter = [0] * len(elbowValues.index)
     finalDiff = [0] * len(elbowValues.index)
     
-    for index, row in elbowValues.iterrows():
+    for index in elbowValues.iterrows():
         if(index == 0):
             diffBefore[index] = 0
         else:
@@ -63,7 +62,7 @@ def elbow(standardized_data):
         sse.append(km.inertia_)
 
     # plot
-    elbowPlot = plt.figure(1);
+    elbowPlot = plt.figure(1)
     plt.plot(k, sse, marker='o')
     plt.xlabel('Number of clusters, K')
     plt.ylabel('SSE')
@@ -90,7 +89,7 @@ def getOptimalKSilhoutteCoeff(standardized_data):
     maxK = 10
     #if(len(standardized_data.index) < maxK):
     maxK = len(standardized_data.index) 
-    sse = []
+    
     k = range(2, maxK)
     for i in k:
         km = KMeans(
@@ -116,7 +115,7 @@ def visualize_clusters():
     loaded_model = joblib.load(os.path.join(dirname, 'KmeansModel.pkl'))
     centers = loaded_model.cluster_centers_
     cluster_ids = np.unique(model.labels_)
-    plt.scatter(centers[:, 6], centers[:, 0], c='grey', s=200, alpha=0.1);
+    plt.scatter(centers[:, 6], centers[:, 0], c='grey', s=200, alpha=0.1)
 
     plt.xlabel(train_data.columns[6])
     plt.ylabel(train_data.columns[0])
@@ -139,7 +138,7 @@ def visualize_clusters():
     
     plt.subplots(1,1)
     clustered_full = sns.scatterplot(x='cluster_id', y='age', style='gender', hue='wheelchair_type', data=standardized_data, palette='Set2')
-    plt.scatter( cluster_ids, centers[:, 6], c='grey', s=200, alpha=0.2);
+    plt.scatter( cluster_ids, centers[:, 6], c='grey', s=200, alpha=0.2)
     plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
     plt.tight_layout()
     # plt.subplots(1,1)

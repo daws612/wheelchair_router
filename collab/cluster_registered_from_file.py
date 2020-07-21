@@ -30,7 +30,7 @@ def elbow(standardized_data):
         sse.append(km.inertia_)
 
     # plot
-    elbowPlot = plt.figure(1);
+    elbowPlot = plt.figure(1)
     plt.plot(k, sse, marker='o')
     plt.xlabel('Number of clusters, K')
     plt.ylabel('SSE')
@@ -82,7 +82,7 @@ def visualize_clusters():
 
     loaded_model = joblib.load(os.path.join(dirname, 'KmeansModel_file.pkl'))
     centers = loaded_model.cluster_centers_
-    plt.scatter(centers[:, 3], centers[:, 0], c='grey', s=200, alpha=0.1);
+    plt.scatter(centers[:, 3], centers[:, 0], c='grey', s=200, alpha=0.1)
 
     plt.xlabel(standardized_data.columns[3])
     plt.ylabel(standardized_data.columns[0])
@@ -228,7 +228,7 @@ try:
     
     centers = model.cluster_centers_
     cluster_ids = np.unique(model.labels_)
-    plt.scatter( cluster_ids, centers[:, 4], c='grey', s=200, alpha=0.2);
+    plt.scatter( cluster_ids, centers[:, 4], c='grey', s=200, alpha=0.2)
 
     plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
     plt.tight_layout()

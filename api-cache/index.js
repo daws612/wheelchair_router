@@ -12,6 +12,7 @@ var logFileName = __dirname + '/api-cache.log';
 const saveRating = require('./saveRating');
 const getRecommendation = require('./getRecommendation');
 const updateClusters = require('./updateClusters');
+const analyze = require('./analyze');
 
 var server = restify.createServer();
 server.use(restify.plugins.bodyParser()); //---Used for post
@@ -28,6 +29,7 @@ server.post('/saveRating', saveRating.saveRating);
 
 server.get('/getrecommendation', getRecommendation.httpGetRecommendation);
 server.get('/updateclusters', updateClusters.httpUpdateClusters);
+server.get('/analyze', analyze.httpAnalyze);
 
 //log to file
 var logFile = fs.createWriteStream(logFileName, { flags: 'a' });
