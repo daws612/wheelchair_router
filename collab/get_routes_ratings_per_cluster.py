@@ -19,22 +19,26 @@ def calculate_ratings(fileName):
     append_to_file(['cluster_id', 'user_ids', 'route_name', 'rating'], fileName)
     standardized_data = joblib.load(os.path.join(dirname, 'standardized_data.pkl'))
     cluster_ids = np.unique(standardized_data.cluster_id)
+    print("Clusters found: " + str(cluster_ids))
     try:
+        
+    
+        postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 50, user="wheelchair_routing",
+                                                            password="em6Wgu<S;^J*xP?g%.",
+                                                            host="api.jaywjay.com",
+                                                            port="5432",
+                                                            database="wheelchair_routing")
+        if(postgreSQL_pool):
+            print("Connection pool NOT created successfully")
+        # Use getconn() to Get Connection from connection pool
+        ps_connection = postgreSQL_pool.getconn()
+
         for clusterId in cluster_ids:
             clusterUsers = standardized_data.query('cluster_id == ' + str(clusterId))
             clusterUserIds = ','.join([str(x) for x in clusterUsers['user_id'].values.tolist()])
-            print(clusterUserIds)
-    
-            postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="wheelchair_routing",
-                                                                password="em6Wgu<S;^J*xP?g%.",
-                                                                host="localhost",
-                                                                port="5432",
-                                                                database="wheelchair_routing")
-            if(not postgreSQL_pool):
-                print("Connection pool NOT created successfully")
+            print(str(clusterId) + " cluster has users: " + clusterUserIds)
 
-            # Use getconn() to Get Connection from connection pool
-            ps_connection = postgreSQL_pool.getconn()
+            
             if(ps_connection):
                 #print("successfully received connection from connection pool ")
                 ps_cursor = ps_connection.cursor()
@@ -45,18 +49,19 @@ def calculate_ratings(fileName):
                                     " group by r.route_name "+
                                     " order by r.route_name")
                 raw_data = DataFrame(ps_cursor.fetchall())
+                ps_cursor.close()
                 if(raw_data.size < 1):
-                    exit()
+                    print("No data found")
+                    continue
                 raw_data.columns = [x.name for x in ps_cursor.description]
                 for idx, row in raw_data.iterrows():
                     #print(row)
                     append_to_file([clusterId, clusterUserIds, row.route_name, row.rating], fileName)
 
-            ps_cursor.close()
 
-            # Use this method to release the connection object and send back to connection pool
-            postgreSQL_pool.putconn(ps_connection)
-            #print("Put away a PostgreSQL connection")
+        # Use this method to release the connection object and send back to connection pool
+        postgreSQL_pool.putconn(ps_connection)
+        print("Put away a PostgreSQL connection")
 
     except (Exception, psycopg2.DatabaseError) as error:
         print("Error while connecting to PostgreSQL", error)

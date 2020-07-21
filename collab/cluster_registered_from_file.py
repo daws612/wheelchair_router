@@ -16,11 +16,11 @@ from mpl_toolkits import mplot3d
 def elbow(standardized_data):
     #ELBOW METHOD
     # calculate distortion for a range of number of cluster
-    maxK = 10
+    maxK = 20
     if(len(standardized_data.index) < maxK):
-        maxK = len(standardized_data.index) 
+        maxK = len(standardized_data.index)
     sse = []
-    k = range(1, 20)
+    k = range(1, maxK-1)
     for i in k:
         km = KMeans(
             n_clusters=i, init='k-means++',
@@ -54,11 +54,11 @@ def elbow(standardized_data):
 def getOptimalKSilhoutteCoeff(standardized_data):
     maxScore = -1
     optimalK = 1
-    maxK = 10
-    #if(len(standardized_data.index) < maxK):
-    maxK = 20 #len(standardized_data.index) 
+    maxK = 20
+    if(len(standardized_data.index) < maxK):
+        maxK = len(standardized_data.index)
     
-    k = range(2, maxK)
+    k = range(2, maxK-1)
     for i in k:
         km = KMeans(
             n_clusters=i, init='k-means++',
