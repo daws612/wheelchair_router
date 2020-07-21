@@ -137,7 +137,12 @@ def visualize_clusters():
     clustered_wh = sns.countplot(x='cluster_id', hue='wheelchair_type', data=standardized_data, palette='husl')
     
     plt.subplots(1,1)
-    clustered_full = sns.scatterplot(x='cluster_id', y='age', style='gender', hue='wheelchair_type', data=standardized_data, palette='Set2')
+    clustered_full = sns.scatterplot(x='cluster_id', y='raw_age', style='gender', hue='wheelchair_type', data=standardized_data, palette='Set2')
+    plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
+    plt.tight_layout()
+
+    plt.subplots(1,1)
+    clustered_full_centers = sns.scatterplot(x='cluster_id', y='age', style='gender', hue='wheelchair_type', data=standardized_data, palette='Set2')
     plt.scatter( cluster_ids, centers[:, 6], c='grey', s=200, alpha=0.2)
     plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
     plt.tight_layout()
@@ -160,6 +165,7 @@ def visualize_clusters():
     # plt.close(clustered_wh.figure)
     clustered_gender.figure.savefig(os.path.join(dirname, 'clustered_gender.png'))
     # plt.close(clustered_gender.figure)
+    clustered_full_centers.figure.savefig(os.path.join(dirname, 'clustered_full_centers.png'))
     clustered_full.figure.savefig(os.path.join(dirname, 'clustered_full.png'))
     # plt.close(clustered_full.figure)
     #plt.show()
@@ -170,7 +176,7 @@ try:
     print('The scikit-learn version is {}.'.format(sklearn.__version__))
     postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="wheelchair_routing",
                                                          password="em6Wgu<S;^J*xP?g%.",
-                                                         host="api.jaywjay.com",
+                                                         host="localhost",
                                                          port="5432",
                                                          database="wheelchair_routing")
     if(postgreSQL_pool):
