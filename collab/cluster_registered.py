@@ -176,7 +176,7 @@ try:
     print('The scikit-learn version is {}.'.format(sklearn.__version__))
     postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="wheelchair_routing",
                                                          password="em6Wgu<S;^J*xP?g%.",
-                                                         host="localhost",
+                                                         host="api.jaywjay.com",
                                                          port="5432",
                                                          database="wheelchair_routing")
     if(postgreSQL_pool):

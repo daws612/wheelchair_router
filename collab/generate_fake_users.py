@@ -23,8 +23,8 @@ def create_fake_row(rowNum, genderChoices, whTypeChoices, fileName):
 
 def generate_fake_data(fileName, rows):
     append_to_file(['user_id', 'age', 'gender', 'wheelchair_type'], fileName)
-    genderChoices = ['Female', 'Male']
-    whTypeChoices = ['Electric', 'Manual']
+    genderChoices = ['Female', 'Male', 'Unspecified']
+    whTypeChoices = ['Electric', 'Manual', 'Unspecified']
     create_fake_row(rows, genderChoices, whTypeChoices, fileName)
 
 
@@ -36,7 +36,7 @@ if __name__ == "__main__" :
         os.remove(fileName)
     else:
         print("File not found. Skip delete")
-    rows = random.randint(400, 500)
+    rows = random.randint(1400, 1500)
     generate_fake_data(fileName, rows)
 
     if(os.path.exists(testFileName)):

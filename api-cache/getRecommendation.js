@@ -67,7 +67,7 @@ async function getTopRatedRoutes(originlat, originlon, destlat, destlon, cluster
     
     //http://localhost:9595/getrecommendation?originlat=40.8227515&originlon=29.9283604&destlat=40.8243215&destlon=29.9185689&userid=2DFDoUKhDcZ5msfoLf2fPggYL1j1
     
-    //call izmit.getRecommendedRoutes(40.8227515, 29.9283604, 40.8243215, 29.9185689, 100, 1, '82,83 ', null);
+    //call izmit.getRecommendedRoutes(40.7632431, 29.925027099999994, 40.8243215, 29.918568899999997, 100, 1, '109,90,109', null);
     var results = await commons.pgPool.query(routeSql, [originlat, originlon, destlat, destlon, radius, min_score, cluster_userids, recommendations]);
 
     if (results.rows && results.rows.length > 0) {

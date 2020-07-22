@@ -117,8 +117,8 @@ try:
     CATEGORICAL_FEATURES = ['gender', 'wheelchair_type']
 
     # create a dataframe with all columns to use later for standardizing the data
-    column_names_all = ['gender_Female', 'gender_Male',
-                        'wheelchair_type_Electric',  'wheelchair_type_Manual']
+    column_names_all = ['gender_Female', 'gender_Male', 'gender_Unspecified',
+                        'wheelchair_type_Electric',  'wheelchair_type_Manual', 'wheelchair_type_Unspecified']
     df = pd.DataFrame(columns=column_names_all)
 
     # OnehotEncoder will transform categorical features into binary/numerical?
@@ -166,7 +166,7 @@ try:
     cluster = model.predict(standardized_data)
     joblib.dump(standardized_data, os.path.join(dirname, 'TrainData_file.pkl'))
 
-   # standardized_data['age'] = raw_data.age.values
+    standardized_data['raw_age'] = raw_data.age.values
     standardized_data['gender'] = raw_data.gender.values
     standardized_data['wheelchair_type'] = raw_data.wheelchair_type.values
     standardized_data['user_id'] = raw_data.user_id.values
@@ -228,8 +228,13 @@ try:
     
     centers = model.cluster_centers_
     cluster_ids = np.unique(model.labels_)
-    plt.scatter( cluster_ids, centers[:, 4], c='grey', s=200, alpha=0.2)
+    plt.scatter( cluster_ids, centers[:, 6], c='grey', s=200, alpha=0.2)
 
+    plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
+    plt.tight_layout()
+
+    plt.subplots(1,1)
+    sns.scatterplot(x='cluster_id', y='raw_age', style='gender', hue='wheelchair_type', data=standardized_data, palette='Set2')
     plt.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), borderaxespad=0)
     plt.tight_layout()
 

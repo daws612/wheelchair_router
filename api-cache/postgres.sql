@@ -313,3 +313,68 @@
 -- $BODY$ LANGUAGE 'plpgsql';
 
 -- call izmit.getRecommendedRoutes(40.8227515, 29.9283604, 40.8243215, 29.9185689, 100, 2.3, '83', null);
+
+
+-- PROCEDURE: izmit.getrecommendedroutes(double precision, double precision, double precision, double precision, double precision, double precision, text, text[])
+
+-- DROP PROCEDURE izmit.getrecommendedroutes(double precision, double precision, double precision, double precision, double precision, double precision, text, text[]);
+
+-- CREATE OR REPLACE PROCEDURE izmit.getrecommendedroutes(
+-- 	originlat double precision,
+-- 	originlon double precision,
+-- 	destlat double precision,
+-- 	destlon double precision,
+-- 	radius double precision,
+-- 	min_score double precision,
+-- 	cluster_userids text,
+-- 	INOUT rec text[])
+-- LANGUAGE 'plpgsql'
+
+-- AS $BODY$
+-- DECLARE
+	
+-- 	sections text[];
+-- 	route_section text;
+-- 	score double precision;
+-- 	recommendations text[];
+
+-- BEGIN
+
+-- 	sections:= Array( select distinct route_sections from 
+-- 	(
+-- 		SELECT r.route_id,  coalesce(round(avg(rating),2),0) as rating, rr.route_sections,
+-- 		ST_DistanceSphere(st_point(originlon, originlat), st_point(rr.orig_lon, rr.orig_lat)) as orig_dist_m,
+-- 		ST_DistanceSphere(st_point(destlon, destlat), st_point(rr.dest_lon, rr.dest_lat)) as dest_dist_m
+-- 		FROM izmit.route_ratings rr 
+-- 		LEFT JOIN izmit.routes r ON r.route_id = rr.route_id 
+-- 		WHERE ST_DistanceSphere(st_point(originlon, originlat), st_point(rr.orig_lon, rr.orig_lat)) < radius
+-- 		AND ST_DistanceSphere(st_point(destlon, destlat), st_point(rr.dest_lon, rr.dest_lat)) < radius
+-- 		and user_id = any(string_to_array(cluster_userids, ',')::bigint[])
+-- 		GROUP BY r.route_id, rr.orig_lon, rr.orig_lat, rr.dest_lon, rr.dest_lat, rr.route_sections
+-- 		Order by orig_dist_m, dest_dist_m
+-- 	) rates);
+	
+-- 	Raise info 'Found Route Sections are: %', sections;
+	
+-- 	FOREACH route_section SLICE 0 IN ARRAY sections
+-- 	  LOOP
+-- 		RAISE INFO 'Getting average of %', route_section;
+-- 		select coalesce(round(avg(section_rating),2),0) into score from (
+-- 			select coalesce(round(avg(rating),2),0) as section_rating 
+-- 			from izmit.route_ratings
+-- 			where  route_id = any(string_to_array(route_section, ',')::bigint[])
+-- 			and user_id = any(string_to_array(cluster_userids, ',')::bigint[])
+-- 			group by route_id) avg_of_sections;
+-- 		raise info 'Score: %', score;
+		
+-- 		IF score >= min_score THEN
+-- 			raise info 'Add to Recommendation: %', route_section;
+-- 			recommendations := array_append(recommendations, route_section);
+-- 		END IF;
+-- 	  END LOOP;
+
+-- 	Raise info 'Recommendations %', recommendations;
+-- 	rec := recommendations; -- array_to_string(recommendations, ',');
+-- 	Raise info 'Rec %', rec;
+-- END
+-- $BODY$;

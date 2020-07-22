@@ -28,7 +28,7 @@ def calculate_ratings(fileName):
                                                             host="localhost",
                                                             port="5432",
                                                             database="wheelchair_routing")
-        if(postgreSQL_pool):
+        if(not postgreSQL_pool):
             print("Connection pool NOT created successfully")
         # Use getconn() to Get Connection from connection pool
         ps_connection = postgreSQL_pool.getconn()
