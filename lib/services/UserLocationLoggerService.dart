@@ -10,7 +10,7 @@ class UserLocationLoggerService {
      if(_currentLocationPos == null)
       return;
      String _currentLocation = _currentLocationPos.latitude.toString() + "," + _currentLocationPos.longitude.toString();
-      print("Logging location: currentLocation: $_currentLocation:  Origin: $origin, Destination: $destination UserID: $userId");
+      //print("Logging location: currentLocation: $_currentLocation:  Origin: $origin, Destination: $destination UserID: $userId");
       String params = "?userId=" +
               userId +
               '&origin=' +
@@ -18,7 +18,7 @@ class UserLocationLoggerService {
               '&destination=' +
               destination;
             var url = Constants.serverUrl +'/userLocationLogger$params';
-            print("Saving user location - " + url);
+            //print("Saving user location - " + url);
              try {
               Dio().get(url);            
           } catch (exception) {
